@@ -28,13 +28,15 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.example.ritsu.ui.theme.RitsuTheme
 import com.example.ritsu.ui.DataScreen
 import com.example.ritsu.ui.ScoreScreen
+import com.example.ritsu.ui.OptionsScreen
 import com.example.ritsu.ui.HeaderComponent
 import com.example.ritsu.ui.NavigationComponent
 import kotlinx.coroutines.delay
 
 enum class Screen {
     Score,
-    Data
+    Data,
+    Options
 }
 
 class MainActivity : ComponentActivity() {
@@ -110,7 +112,18 @@ fun MainContent() {
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
-        topBar = { HeaderComponent() },
+        topBar = {
+            HeaderComponent(
+                currentScreen = currentScreen,
+                onActionClick = {
+                    currentScreen = if (currentScreen != Screen.Options) {
+                        Screen.Options
+                    } else {
+                        Screen.Score
+                    }
+                }
+            )
+        },
         bottomBar = {
             NavigationComponent(
                 currentScreen = currentScreen,
@@ -122,6 +135,7 @@ fun MainContent() {
             when (currentScreen) {
                 Screen.Score -> ScoreScreen()
                 Screen.Data -> DataScreen()
+                Screen.Options -> OptionsScreen()
             }
         }
     }
