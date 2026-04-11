@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Help
+import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.FileUpload
@@ -50,6 +51,13 @@ fun OptionsScreen() {
             ListItem(
                 headlineContent = { Text("Help") },
                 leadingContent = { Icon(Icons.AutoMirrored.Filled.Help, contentDescription = null) },
+                modifier = Modifier.clickable { /* No functionality */ }
+            )
+        }
+        item {
+            ListItem(
+                headlineContent = { Text("Debug") },
+                leadingContent = { Icon(Icons.Default.BugReport, contentDescription = null) },
                 modifier = Modifier.clickable { /* No functionality */ }
             )
         }
