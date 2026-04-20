@@ -1,8 +1,12 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+<<<<<<< database
     alias(libs.plugins.google.ksp)
     alias(libs.plugins.kotlin.serialization)
+=======
+    alias(libs.plugins.ksp)
+>>>>>>> master
 }
 
 android {
@@ -53,7 +57,12 @@ dependencies {
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
+<<<<<<< database
     implementation(libs.kotlinx.serialization.json)
+=======
+    implementation(libs.androidx.navigation.compose)
+    implementation(libs.mlkit.text.recognition)
+>>>>>>> master
     ksp(libs.androidx.room.compiler)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
