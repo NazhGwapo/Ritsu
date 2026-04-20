@@ -3,12 +3,16 @@ package com.example.ritsu.data
 import androidx.room.*
 
 // --- 1. THE ENTITIES (The Tables) ---
-@Entity(tableName = "game_configs")
+@Entity(
+    tableName = "game_configs",
+    indices = [Index(value = ["gameName"], unique = true)]
+)
 data class GameConfig(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val gameName: String,
     // Store extra fields as a comma-separated string or JSON (e.g., "Perfect,Great,Good,Miss")
-    val customFields: String
+    val customFields: String,
+    val configVersion: Int
 )
 
 @Entity(
@@ -70,6 +74,22 @@ interface ScoreDao {
     @Insert
     suspend fun insertConfig(config: GameConfig): Long
 
+    @Update
+    suspend fun updateConfig(config: GameConfig)
+
+    @Query("SELECT * FROM game_configs WHERE gameName = :name LIMIT 1")
+    suspend fun getConfigByName(name: String): GameConfig?
+
+    @Transaction
+    suspend fun upsertConfig(newConfig: GameConfig) {
+        val existing = getConfigByName(newConfig.gameName)
+        if (existing == null) {
+            insertConfig(newConfig)
+        } else if (newConfig.configVersion > existing.configVersion) {
+            updateConfig(newConfig.copy(id = existing.id))
+        }
+    }
+
     @Insert
     suspend fun insertScore(score: GenericScore): Long
 
@@ -86,7 +106,7 @@ interface ScoreDao {
 
 // --- 4. THE DATABASE ---
 
-@Database(entities = [GameConfig::class, GenericScore::class, ScoreDetail::class], version = 2)
+@Database(entities = [GameConfig::class, GenericScore::class, ScoreDetail::class], version = 3)
 abstract class RitsuDatabase : RoomDatabase() {
     abstract fun scoreDao(): ScoreDao
 }

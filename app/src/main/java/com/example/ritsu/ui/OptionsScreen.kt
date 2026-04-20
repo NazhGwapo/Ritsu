@@ -15,6 +15,7 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import com.example.ritsu.data.ConfigManager
 
 @Composable
 fun OptionsScreen() {
@@ -23,7 +24,7 @@ fun OptionsScreen() {
             ListItem(
                 headlineContent = { Text("Import Configuration") },
                 leadingContent = { Icon(Icons.Default.FileDownload, contentDescription = null) },
-                modifier = Modifier.clickable { /* No functionality */ }
+                modifier = Modifier.clickable { ConfigManager.importConfiguration() }
             )
         }
         item {
