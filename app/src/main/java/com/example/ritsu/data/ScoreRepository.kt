@@ -1,6 +1,7 @@
 package com.example.ritsu.data
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 
 class ScoreRepository(private val scoreDao: ScoreDao) {
@@ -25,19 +26,15 @@ class ScoreRepository(private val scoreDao: ScoreDao) {
     /**
      * Retrieves all scores from the database with their associated details.
      */
-    suspend fun getAllScores(): List<FullScoreRecord> {
-        return withContext(Dispatchers.IO) {
-            scoreDao.getAllScores()
-        }
+    fun getAllScores(): Flow<List<FullScoreRecord>> {
+        return scoreDao.getAllScores()
     }
 
     /**
      * Retrieves all game configurations.
      */
-    suspend fun getAllConfigs(): List<GameConfig> {
-        return withContext(Dispatchers.IO) {
-            scoreDao.getAllConfigs()
-        }
+    fun getAllConfigs(): Flow<List<GameConfig>> {
+        return scoreDao.getAllConfigs()
     }
 
     /**

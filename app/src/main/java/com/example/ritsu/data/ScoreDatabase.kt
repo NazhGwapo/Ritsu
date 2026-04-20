@@ -1,6 +1,7 @@
 package com.example.ritsu.data
 
 import androidx.room.*
+import kotlinx.coroutines.flow.Flow
 
 // --- 1. THE ENTITIES (The Tables) ---
 @Entity(
@@ -10,9 +11,9 @@ import androidx.room.*
 data class GameConfig(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val gameName: String,
-    // Store extra fields as a comma-separated string or JSON (e.g., "Perfect,Great,Good,Miss")
-    val customFields: String,
-    val configVersion: Int
+    // Store JSON representation of fields and formula
+    val configData: String,
+    val configVersion: Int = 1
 )
 
 @Entity(
@@ -98,15 +99,33 @@ interface ScoreDao {
 
     @Transaction // Necessary because it queries multiple tables
     @Query("SELECT * FROM generic_scores ORDER BY timestamp DESC")
-    fun getAllScores(): List<FullScoreRecord>
+    fun getAllScores(): Flow<List<FullScoreRecord>>
 
     @Query("SELECT * FROM game_configs")
-    suspend fun getAllConfigs(): List<GameConfig>
+    fun getAllConfigs(): Flow<List<GameConfig>>
 }
 
 // --- 4. THE DATABASE ---
 
-@Database(entities = [GameConfig::class, GenericScore::class, ScoreDetail::class], version = 3)
+@Database(entities = [GameConfig::class, GenericScore::class, ScoreDetail::class], version = 4)
 abstract class RitsuDatabase : RoomDatabase() {
     abstract fun scoreDao(): ScoreDao
+
+    companion object {
+        @Volatile
+        private var INSTANCE: RitsuDatabase? = null
+
+        fun getDatabase(context: android.content.Context): RitsuDatabase {
+            return INSTANCE ?: synchronized(this) {
+                val instance = Room.databaseBuilder(
+                    context.applicationContext,
+                    RitsuDatabase::class.java,
+                    "ritsu-database"
+                ).fallbackToDestructiveMigration(dropAllTables = true)
+                    .build()
+                INSTANCE = instance
+                instance
+            }
+        }
+    }
 }

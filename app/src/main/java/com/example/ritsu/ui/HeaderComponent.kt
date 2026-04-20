@@ -24,6 +24,7 @@ fun HeaderComponent(
                     Screen.Score -> "Scores"
                     Screen.Data -> "Data"
                     Screen.Options -> "Options"
+                    Screen.ManageConfigs -> "Manage Configs"
                 }
             )
         },
