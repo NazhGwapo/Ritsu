@@ -103,6 +103,9 @@ interface ScoreDao {
 
     @Query("SELECT * FROM game_configs")
     fun getAllConfigs(): Flow<List<GameConfig>>
+
+    @Delete
+    suspend fun deleteConfig(config: GameConfig)
 }
 
 // --- 4. THE DATABASE ---
