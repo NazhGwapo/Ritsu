@@ -2,8 +2,24 @@ package com.example.ritsu.data
 
 import androidx.room.*
 import kotlinx.coroutines.flow.Flow
+import kotlinx.serialization.Serializable
 
 // --- 1. THE ENTITIES (The Tables) ---
+@Serializable
+data class ConfigField(
+    val key: String,
+    val label: String,
+    val type: String = "number"
+)
+
+@Serializable
+data class GameConfigData(
+    val gameName: String,
+    val configVersion: Int = 1,
+    val fields: List<ConfigField>,
+    val formula: String? = null
+)
+
 @Entity(
     tableName = "game_configs",
     indices = [Index(value = ["gameName"], unique = true)]

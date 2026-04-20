@@ -7,11 +7,13 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.json.JSONObject
+import kotlinx.serialization.json.Json
 import java.io.BufferedReader
 import java.io.InputStreamReader
 
 object ConfigManager {
+    private val json = Json { ignoreUnknownKeys = true }
+
     fun handleImport(context: Context, uri: Uri?) {
         if (uri == null) return
         
@@ -21,31 +23,29 @@ object ConfigManager {
                 contentResolver.openInputStream(uri)?.use { inputStream ->
                     val reader = BufferedReader(InputStreamReader(inputStream))
                     val jsonString = reader.readText()
-                    val jsonObject = JSONObject(jsonString)
-
-                    val name = jsonObject.getString("gameName")
-                    val version = jsonObject.optInt("configVersion", 1)
+                    
+                    val decoded = json.decodeFromString<GameConfigData>(jsonString)
 
                     val config = GameConfig(
-                        gameName = name,
+                        gameName = decoded.gameName,
                         configData = jsonString,
-                        configVersion = version
+                        configVersion = decoded.configVersion
                     )
 
                     val database = RitsuDatabase.getDatabase(context)
                     val dao = database.scoreDao()
                     
-                    val existing = dao.getConfigByName(name)
+                    val existing = dao.getConfigByName(decoded.gameName)
                     val message = when {
                         existing == null -> {
                             dao.insertConfig(config)
-                            "Imported $name (v$version)"
+                            "Imported ${decoded.gameName} (v${decoded.configVersion})"
                         }
-                        version > existing.configVersion -> {
+                        decoded.configVersion > existing.configVersion -> {
                             dao.updateConfig(config.copy(id = existing.id))
-                            "Updated $name to v$version"
+                            "Updated ${decoded.gameName} to v${decoded.configVersion}"
                         }
-                        else -> "Config $name is already up to date (v${existing.configVersion})"
+                        else -> "Config ${decoded.gameName} is already up to date (v${existing.configVersion})"
                     }
 
                     withContext(Dispatchers.Main) {

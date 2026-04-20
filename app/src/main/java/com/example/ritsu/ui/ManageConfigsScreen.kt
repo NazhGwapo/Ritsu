@@ -15,8 +15,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.ritsu.data.GameConfig
+import com.example.ritsu.data.GameConfigData
 import com.example.ritsu.data.RitsuDatabase
-import org.json.JSONObject
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.encodeToString
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -26,6 +28,7 @@ fun ManageConfigsScreen() {
     val context = LocalContext.current
     val database = remember { RitsuDatabase.getDatabase(context) }
     val scope = rememberCoroutineScope()
+    val json = remember { Json { ignoreUnknownKeys = true; prettyPrint = true } }
     
     val configs by database.scoreDao().getAllConfigs().collectAsState(initial = emptyList())
     var selectedConfig by remember { mutableStateOf<GameConfig?>(null) }
@@ -39,13 +42,16 @@ fun ManageConfigsScreen() {
                 .fillMaxSize()
         ) {
             items(configs) { config ->
+                val configData = remember(config.configData) {
+                    try {
+                        json.decodeFromString<GameConfigData>(config.configData)
+                    } catch (e: Exception) { null }
+                }
+
                 ListItem(
                     headlineContent = { Text(config.gameName) },
                     supportingContent = {
-                        val fieldsCount = try {
-                            val json = JSONObject(config.configData)
-                            json.getJSONArray("fields").length()
-                        } catch (e: Exception) { 0 }
+                        val fieldsCount = configData?.fields?.size ?: 0
                         Text("Fields: $fieldsCount | Version: ${config.configVersion}")
                     },
                     modifier = Modifier.clickable { selectedConfig = config }
@@ -65,9 +71,27 @@ fun ManageConfigsScreen() {
     }
 
     selectedConfig?.let { config ->
+        val configData = remember(config) {
+            try {
+                json.decodeFromString<GameConfigData>(config.configData)
+            } catch (e: Exception) { null }
+        }
+
+        var showRaw by remember { mutableStateOf(false) }
+
         AlertDialog(
             onDismissRequest = { selectedConfig = null },
-            title = { Text(config.gameName) },
+            title = {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(config.gameName)
+                    TextButton(onClick = { showRaw = !showRaw }) {
+                        Text(if (showRaw) "Show Fields" else "Show Raw")
+                    }
+                }
+            },
             text = {
                 Column(
                     modifier = Modifier
@@ -75,10 +99,32 @@ fun ManageConfigsScreen() {
                         .heightIn(max = 400.dp)
                         .verticalScroll(rememberScrollState())
                 ) {
-                    Text(
-                        text = config.configData,
-                        style = MaterialTheme.typography.bodySmall
-                    )
+                    if (showRaw || configData == null) {
+                        val prettyJson = remember(config.configData) {
+                            try {
+                                val obj = json.decodeFromString<GameConfigData>(config.configData)
+                                json.encodeToString(obj)
+                            } catch (e: Exception) { config.configData }
+                        }
+                        Text(
+                            text = prettyJson,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    } else {
+                        configData.fields.forEach { field ->
+                            ListItem(
+                                headlineContent = { Text(field.label) },
+                                supportingContent = { Text("Key: ${field.key} | Type: ${field.type}") }
+                            )
+                        }
+                        if (configData.formula != null) {
+                            Text(
+                                "Formula: ${configData.formula}",
+                                modifier = Modifier.padding(top = 8.dp),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
                 }
             },
             confirmButton = {
