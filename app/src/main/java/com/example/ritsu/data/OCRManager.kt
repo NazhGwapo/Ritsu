@@ -18,17 +18,12 @@ class OCRManager {
      * Returns a map of keys to their extracted text values.
      */
     suspend fun processImage(bitmap: Bitmap, config: GameConfigData): Map<String, String> = withContext(Dispatchers.Default) {
-        val image = InputImage.fromBitmap(bitmap, 0)
-        val result = try {
-            Tasks.await(recognizer.process(image))
-        } catch (e: Exception) {
-            e.printStackTrace()
-            return@withContext emptyMap()
-        }
+        val result = recognizeText(bitmap) ?: return@withContext emptyMap()
+        processImageWithResult(result, config, bitmap.width, bitmap.height)
+    }
 
+    fun processImageWithResult(result: Text, config: GameConfigData, width: Int, height: Int): Map<String, String> {
         val extractedData = mutableMapOf<String, String>()
-        val width = bitmap.width
-        val height = bitmap.height
 
         // Extract generic fields if they have rects defined
         config.titleRect?.let { extractedData["songTitle"] = extractTextFromRect(result, it, width, height) }
@@ -45,7 +40,17 @@ class OCRManager {
             }
         }
 
-        extractedData
+        return extractedData
+    }
+
+    suspend fun recognizeText(bitmap: Bitmap): Text? = withContext(Dispatchers.Default) {
+        val image = InputImage.fromBitmap(bitmap, 0)
+        try {
+            Tasks.await(recognizer.process(image))
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
     }
 
     private fun extractTextFromRect(text: Text, ocrRect: OcrRect, imgW: Int, imgH: Int): String {
@@ -55,23 +60,44 @@ class OCRManager {
         val bottom = ((ocrRect.y + ocrRect.h) * imgH).toInt()
         val targetRect = Rect(left, top, right, bottom)
 
-        val elements = mutableListOf<Pair<Text.Element, Int>>()
+        val items = mutableListOf<Triple<String, Int, Int>>()
 
         for (block in text.textBlocks) {
             for (line in block.lines) {
                 for (element in line.elements) {
-                    val box = element.boundingBox ?: continue
-                    // Use center point for more robust inclusion check
-                    if (targetRect.contains(box.centerX(), box.centerY())) {
-                        elements.add(element to box.top)
+                    val elementBox = element.boundingBox ?: continue
+                    if (!Rect.intersects(targetRect, elementBox)) continue
+
+                    // Precision at symbol level if available
+                    val symbols = element.symbols
+                    if (symbols.isNotEmpty()) {
+                        val filteredText = symbols.filter { symbol ->
+                            val sBox = symbol.boundingBox ?: return@filter false
+                            targetRect.contains(sBox.centerX(), sBox.centerY())
+                        }.joinToString("") { it.text }
+
+                        if (filteredText.isNotBlank()) {
+                            // Find the horizontal position of the first symbol included
+                            val firstSymbolLeft = symbols.firstOrNull { symbol ->
+                                val sBox = symbol.boundingBox ?: return@firstOrNull false
+                                targetRect.contains(sBox.centerX(), sBox.centerY())
+                            }?.boundingBox?.left ?: elementBox.left
+                            
+                            items.add(Triple(filteredText, elementBox.top, firstSymbolLeft))
+                        }
+                    } else {
+                        // Fallback to element level if symbols are not available
+                        if (targetRect.contains(elementBox.centerX(), elementBox.centerY())) {
+                            items.add(Triple(element.text, elementBox.top, elementBox.left))
+                        }
                     }
                 }
             }
         }
 
         // Sort by vertical then horizontal position to maintain reading order
-        return elements.sortedWith(compareBy({ it.second }, { it.first.boundingBox?.left ?: 0 }))
-            .joinToString(" ") { it.first.text }
+        return items.sortedWith(compareBy({ it.second }, { it.third }))
+            .joinToString(" ") { it.first }
             .trim()
     }
 }

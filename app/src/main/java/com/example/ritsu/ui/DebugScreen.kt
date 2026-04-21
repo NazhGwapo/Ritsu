@@ -62,6 +62,7 @@ import com.example.ritsu.data.GameConfigData
 import com.example.ritsu.data.OCRManager
 import com.example.ritsu.data.OcrRect
 import com.example.ritsu.data.RitsuDatabase
+import com.google.mlkit.vision.text.Text
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 
@@ -94,6 +95,7 @@ fun OcrTestDialog(onDismiss: () -> Unit) {
     var selectedConfig by remember { mutableStateOf<GameConfig?>(null) }
     var selectedConfigData by remember { mutableStateOf<GameConfigData?>(null) }
     var selectedBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    var fullTextResult by remember { mutableStateOf<Text?>(null) }
     var ocrResults by remember { mutableStateOf<Map<String, String>?>(null) }
 
     val pickerLauncher = rememberLauncherForActivityResult(
@@ -117,8 +119,15 @@ fun OcrTestDialog(onDismiss: () -> Unit) {
                     val json = Json { ignoreUnknownKeys = true }
                     val gameConfigData = json.decodeFromString<GameConfigData>(config.configData)
                     selectedConfigData = gameConfigData
-                    val results = OCRManager().processImage(bitmap, gameConfigData)
-                    ocrResults = results
+                    
+                    val ocrManager = OCRManager()
+                    val textResult = ocrManager.recognizeText(bitmap)
+                    fullTextResult = textResult
+                    
+                    if (textResult != null) {
+                        val results = ocrManager.processImage(bitmap, gameConfigData)
+                        ocrResults = results
+                    }
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
@@ -236,6 +245,28 @@ fun OcrTestDialog(onDismiss: () -> Unit) {
                                 config.rankRect?.let { drawRect(it, Color.Magenta) }
                                 config.fields.forEach { field ->
                                     field.ocrRect?.let { drawRect(it, Color.White) }
+                                }
+
+                                // Draw all detected OCR elements in light gray to see what we missed
+                                fullTextResult?.textBlocks?.forEach { block ->
+                                    block.lines.forEach { line ->
+                                        line.elements.forEach { element ->
+                                            val box = element.boundingBox ?: return@forEach
+                                            
+                                            drawRect(
+                                                color = Color.Gray.copy(alpha = 0.3f),
+                                                topLeft = Offset(
+                                                    x = offsetX + (box.left.toFloat() / bitmap.width) * imageSize.width * scale,
+                                                    y = offsetY + (box.top.toFloat() / bitmap.height) * imageSize.height * scale
+                                                ),
+                                                size = Size(
+                                                    width = (box.width().toFloat() / bitmap.width) * imageSize.width * scale,
+                                                    height = (box.height().toFloat() / bitmap.height) * imageSize.height * scale
+                                                ),
+                                                style = Stroke(width = 1.dp.toPx())
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
