@@ -30,6 +30,7 @@ import com.example.ritsu.ui.DataScreen
 import com.example.ritsu.ui.ScoreScreen
 import com.example.ritsu.ui.OptionsScreen
 import com.example.ritsu.ui.ManageConfigsScreen
+import com.example.ritsu.ui.DebugScreen
 import com.example.ritsu.ui.HeaderComponent
 import com.example.ritsu.ui.NavigationComponent
 import kotlinx.coroutines.delay
@@ -38,7 +39,8 @@ enum class Screen {
     Score,
     Data,
     Options,
-    ManageConfigs
+    ManageConfigs,
+    Debug
 }
 
 class MainActivity : ComponentActivity() {
@@ -120,6 +122,7 @@ fun MainContent() {
                 onActionClick = {
                     when (currentScreen) {
                         Screen.ManageConfigs -> currentScreen = Screen.Options
+                        Screen.Debug -> currentScreen = Screen.Options
                         Screen.Options -> currentScreen = Screen.Score
                         else -> currentScreen = Screen.Options
                     }
@@ -138,9 +141,11 @@ fun MainContent() {
                 Screen.Score -> ScoreScreen()
                 Screen.Data -> DataScreen()
                 Screen.Options -> OptionsScreen(
-                    onManageConfigsClick = { currentScreen = Screen.ManageConfigs }
+                    onManageConfigsClick = { currentScreen = Screen.ManageConfigs },
+                    onDebugClick = { currentScreen = Screen.Debug }
                 )
                 Screen.ManageConfigs -> ManageConfigsScreen()
+                Screen.Debug -> DebugScreen()
             }
         }
     }
