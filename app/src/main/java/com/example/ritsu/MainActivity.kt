@@ -34,6 +34,13 @@ import com.example.ritsu.ui.DebugScreen
 import com.example.ritsu.ui.BoxEditorScreen
 import com.example.ritsu.ui.HeaderComponent
 import com.example.ritsu.ui.NavigationComponent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import kotlinx.coroutines.delay
 
 enum class Screen {
@@ -114,7 +121,17 @@ fun SplashScreenContent() {
 
 @Composable
 fun MainContent() {
-    var currentScreen by remember { mutableStateOf(Screen.Score) }
+    val navController = rememberNavController()
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+
+    val currentScreen = when (navBackStackEntry?.destination?.route) {
+        Screen.Data.name -> Screen.Data
+        Screen.Options.name -> Screen.Options
+        Screen.ManageConfigs.name -> Screen.ManageConfigs
+        Screen.Debug.name -> Screen.Debug
+        Screen.BoxEditor.name -> Screen.BoxEditor
+        else -> Screen.Score
+    }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -122,13 +139,10 @@ fun MainContent() {
             HeaderComponent(
                 currentScreen = currentScreen,
                 onActionClick = {
-                currentScreen = when (currentScreen) {
-                    Screen.ManageConfigs -> Screen.Options
-                    Screen.Debug -> Screen.Options
-                    Screen.BoxEditor -> Screen.ManageConfigs
-                    Screen.Options -> Screen.Score
-                    else -> Screen.Options
-                }
+                    when (currentScreen) {
+                        Screen.Score, Screen.Data -> navController.navigate(Screen.Options.name)
+                        else -> navController.popBackStack()
+                    }
                 }
             )
         },
@@ -136,25 +150,43 @@ fun MainContent() {
             if (currentScreen == Screen.Score || currentScreen == Screen.Data) {
                 NavigationComponent(
                     currentScreen = currentScreen,
-                    onScreenSelected = { currentScreen = it }
+                    onScreenSelected = { screen ->
+                        navController.navigate(screen.name) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
                 )
             }
         }
     ) { innerPadding ->
-        Box(modifier = Modifier.padding(innerPadding)) {
-            when (currentScreen) {
-                Screen.Score -> ScoreScreen()
-                Screen.Data -> DataScreen()
-                Screen.Options -> OptionsScreen(
-                    onManageConfigsClick = { currentScreen = Screen.ManageConfigs },
-                    onDebugClick = { currentScreen = Screen.Debug }
+        NavHost(
+            navController = navController,
+            startDestination = Screen.Score.name,
+            modifier = Modifier.padding(innerPadding),
+            enterTransition = { fadeIn(animationSpec = tween(200)) },
+            exitTransition = { fadeOut(animationSpec = tween(200)) },
+            popEnterTransition = { fadeIn(animationSpec = tween(200)) },
+            popExitTransition = { fadeOut(animationSpec = tween(200)) }
+        ) {
+            composable(Screen.Score.name) { ScoreScreen() }
+            composable(Screen.Data.name) { DataScreen() }
+            composable(Screen.Options.name) {
+                OptionsScreen(
+                    onManageConfigsClick = { navController.navigate(Screen.ManageConfigs.name) },
+                    onDebugClick = { navController.navigate(Screen.Debug.name) }
                 )
-                Screen.ManageConfigs -> ManageConfigsScreen(
-                    onEditConfig = { currentScreen = Screen.BoxEditor }
-                )
-                Screen.Debug -> DebugScreen()
-                Screen.BoxEditor -> BoxEditorScreen()
             }
+            composable(Screen.ManageConfigs.name) {
+                ManageConfigsScreen(
+                    onEditConfig = { navController.navigate(Screen.BoxEditor.name) }
+                )
+            }
+            composable(Screen.Debug.name) { DebugScreen() }
+            composable(Screen.BoxEditor.name) { BoxEditorScreen() }
         }
     }
 }
