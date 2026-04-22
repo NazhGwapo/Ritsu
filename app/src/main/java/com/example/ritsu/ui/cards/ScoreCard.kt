@@ -98,12 +98,16 @@ fun ScoreCard(
                 Text(
                     text = gameName,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
                 Text(
                     text = "[${score.difficultyName}] ${if (score.difficultyVal % 1.0 == 0.0) score.difficultyVal.toInt() else score.difficultyVal} - ${"%.2f".format(score.accuracy)}% ${score.playRank}",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
                 Text(
                     text = "Time elapsed, X:XXPM", // Placeholder as per image
