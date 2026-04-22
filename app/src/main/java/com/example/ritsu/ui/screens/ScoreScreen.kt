@@ -29,34 +29,6 @@ import com.example.ritsu.ui.cards.ScoreCard
 fun ScoreScreen() {
     var searchQuery by remember { mutableStateOf("") }
 
-    // Dummy data for display
-    val dummyScores = remember {
-        listOf(
-            GenericScore(
-                songTitle = "Example Song 1",
-                difficultyName = "Expert",
-                difficultyVal = 26.0,
-                accuracy = 99.5,
-                playRank = "S",
-                configId = 1,
-                totalScore = 1000000,
-                maxCombo = 500,
-                timestamp = System.currentTimeMillis()
-            ),
-            GenericScore(
-                songTitle = "Example Song 2",
-                difficultyName = "Master",
-                difficultyVal = 31.0,
-                accuracy = 97.2,
-                playRank = "A",
-                configId = 1,
-                totalScore = 950000,
-                maxCombo = 800,
-                timestamp = System.currentTimeMillis()
-            )
-        )
-    }
-
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
@@ -71,17 +43,13 @@ fun ScoreScreen() {
             singleLine = true
         )
         
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 16.dp)
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth(),
+            contentAlignment = Alignment.Center
         ) {
-            items(dummyScores.filter { it.songTitle.contains(searchQuery, ignoreCase = true) }) { score ->
-                ScoreCard(
-                    score = score,
-                    gameName = "Example Game",
-                    onMoreClick = { /* Handle menu click */ }
-                )
-            }
+            Text(text = "No scores yet")
         }
     }
 }

@@ -66,9 +66,14 @@ import com.google.mlkit.vision.text.Text
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 
+import androidx.compose.material3.TextField
+import com.example.ritsu.data.GenericScore
+import com.example.ritsu.ui.cards.ScoreCard
+
 @Composable
 fun DebugScreen() {
     var showOcrDialog by remember { mutableStateOf(false) }
+    var showCardEditor by remember { mutableStateOf(false) }
 
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         item {
@@ -77,10 +82,118 @@ fun DebugScreen() {
                 modifier = Modifier.clickable { showOcrDialog = true }
             )
         }
+        item {
+            ListItem(
+                headlineContent = { Text("ScoreCard Editor") },
+                modifier = Modifier.clickable { showCardEditor = true }
+            )
+        }
     }
 
     if (showOcrDialog) {
         OcrTestDialog(onDismiss = { showOcrDialog = false })
+    }
+    
+    if (showCardEditor) {
+        ScoreCardEditorDialog(onDismiss = { showCardEditor = false })
+    }
+}
+
+@Composable
+fun ScoreCardEditorDialog(onDismiss: () -> Unit) {
+    var songTitle by remember { mutableStateOf("Song Name") }
+    var gameName by remember { mutableStateOf("Game") }
+    var difficultyName by remember { mutableStateOf("Difficulty") }
+    var difficultyVal by remember { mutableStateOf("22.0") }
+    var accuracy by remember { mutableStateOf("98.76") }
+    var playRank by remember { mutableStateOf("RANK") }
+    var selectedBitmap by remember { mutableStateOf<Bitmap?>(null) }
+
+    val context = LocalContext.current
+    val pickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                val source = ImageDecoder.createSource(context.contentResolver, it)
+                selectedBitmap = ImageDecoder.decodeBitmap(source) { decoder, _, _ ->
+                    decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
+                }
+            } else {
+                @Suppress("DEPRECATION")
+                selectedBitmap = MediaStore.Images.Media.getBitmap(context.contentResolver, it)
+            }
+        }
+    }
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            shape = MaterialTheme.shapes.large,
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 6.dp
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "ScoreCard Preview", 
+                    style = MaterialTheme.typography.headlineSmall,
+                    modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
+                )
+                
+                // Removed extra horizontal padding here so ScoreCard gets full width
+                ScoreCard(
+                    score = GenericScore(
+                        configId = 0,
+                        songTitle = songTitle,
+                        difficultyName = difficultyName,
+                        difficultyVal = difficultyVal.toDoubleOrNull() ?: 0.0,
+                        totalScore = 0,
+                        maxCombo = 0,
+                        accuracy = accuracy.toDoubleOrNull() ?: 0.0,
+                        playRank = playRank,
+                        timestamp = System.currentTimeMillis()
+                    ),
+                    gameName = gameName,
+                    imageBitmap = selectedBitmap
+                )
+
+                Column(
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    TextField(value = songTitle, onValueChange = { songTitle = it }, label = { Text("Song Title") }, modifier = Modifier.fillMaxWidth())
+                    TextField(value = gameName, onValueChange = { gameName = it }, label = { Text("Game Name") }, modifier = Modifier.fillMaxWidth())
+                    TextField(value = difficultyName, onValueChange = { difficultyName = it }, label = { Text("Difficulty Name") }, modifier = Modifier.fillMaxWidth())
+                    TextField(value = difficultyVal, onValueChange = { difficultyVal = it }, label = { Text("Difficulty Value") }, modifier = Modifier.fillMaxWidth())
+                    TextField(value = accuracy, onValueChange = { accuracy = it }, label = { Text("Accuracy") }, modifier = Modifier.fillMaxWidth())
+                    TextField(value = playRank, onValueChange = { playRank = it }, label = { Text("Play Rank") }, modifier = Modifier.fillMaxWidth())
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Button(onClick = { pickerLauncher.launch("image/*") }, modifier = Modifier.fillMaxWidth()) {
+                        Text("Select Card Image")
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Button(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
+                        Text("Close")
+                    }
+                }
+            }
+        }
     }
 }
 
