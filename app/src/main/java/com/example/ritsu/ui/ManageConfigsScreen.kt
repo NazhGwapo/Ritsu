@@ -8,6 +8,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
@@ -34,38 +35,48 @@ fun ManageConfigsScreen(onEditConfig: () -> Unit) {
     val configs by database.scoreDao().getAllConfigs().collectAsState(initial = emptyList())
     var selectedConfig by remember { mutableStateOf<GameConfig?>(null) }
 
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
-    ) {
-        LazyColumn(
+    Scaffold(
+        floatingActionButton = {
+            FloatingActionButton(onClick = onEditConfig) {
+                Icon(Icons.Default.Edit, contentDescription = "Edit Configs")
+            }
+        }
+    ) { padding ->
+        Surface(
             modifier = Modifier
                 .fillMaxSize()
+                .padding(padding),
+            color = MaterialTheme.colorScheme.background
         ) {
-            items(configs) { config ->
-                val configData = remember(config.configData) {
-                    try {
-                        json.decodeFromString<GameConfigData>(config.configData)
-                    } catch (e: Exception) { null }
-                }
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+            ) {
+                items(configs) { config ->
+                    val configData = remember(config.configData) {
+                        try {
+                            json.decodeFromString<GameConfigData>(config.configData)
+                        } catch (e: Exception) { null }
+                    }
 
-                ListItem(
-                    headlineContent = { Text(config.gameName) },
-                    supportingContent = {
-                        val fieldsCount = configData?.fields?.size ?: 0
-                        Text("Fields: $fieldsCount | Version: ${config.configVersion}")
-                    },
-                    modifier = Modifier.clickable { selectedConfig = config }
-                )
-                HorizontalDivider()
-            }
-            if (configs.isEmpty()) {
-                item {
-                    Text(
-                        "No configurations found.",
-                        modifier = Modifier.padding(16.dp),
-                        style = MaterialTheme.typography.bodyMedium
+                    ListItem(
+                        headlineContent = { Text(config.gameName) },
+                        supportingContent = {
+                            val fieldsCount = configData?.fields?.size ?: 0
+                            Text("Fields: $fieldsCount | Version: ${config.configVersion}")
+                        },
+                        modifier = Modifier.clickable { selectedConfig = config }
                     )
+                    HorizontalDivider()
+                }
+                if (configs.isEmpty()) {
+                    item {
+                        Text(
+                            "No configurations found.",
+                            modifier = Modifier.padding(16.dp),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
                 }
             }
         }
@@ -134,32 +145,19 @@ fun ManageConfigsScreen(onEditConfig: () -> Unit) {
                 }
             },
             dismissButton = {
-                Row {
-                    IconButton(
-                        onClick = {
+                IconButton(
+                    onClick = {
+                        scope.launch {
+                            database.scoreDao().deleteConfig(config)
                             selectedConfig = null
-                            onEditConfig()
                         }
-                    ) {
-                        Icon(
-                            Icons.Default.Edit,
-                            contentDescription = "Edit Config"
-                        )
                     }
-                    IconButton(
-                        onClick = {
-                            scope.launch {
-                                database.scoreDao().deleteConfig(config)
-                                selectedConfig = null
-                            }
-                        }
-                    ) {
-                        Icon(
-                            Icons.Default.Delete,
-                            contentDescription = "Delete Config",
-                            tint = MaterialTheme.colorScheme.error
-                        )
-                    }
+                ) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = "Delete Config",
+                        tint = MaterialTheme.colorScheme.error
+                    )
                 }
             }
         )
