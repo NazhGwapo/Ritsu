@@ -9,6 +9,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -24,7 +25,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @Composable
-fun ManageConfigsScreen() {
+fun ManageConfigsScreen(onEditConfig: () -> Unit) {
     val context = LocalContext.current
     val database = remember { RitsuDatabase.getDatabase(context) }
     val scope = rememberCoroutineScope()
@@ -133,19 +134,32 @@ fun ManageConfigsScreen() {
                 }
             },
             dismissButton = {
-                IconButton(
-                    onClick = {
-                        scope.launch {
-                            database.scoreDao().deleteConfig(config)
+                Row {
+                    IconButton(
+                        onClick = {
                             selectedConfig = null
+                            onEditConfig()
                         }
+                    ) {
+                        Icon(
+                            Icons.Default.Edit,
+                            contentDescription = "Edit Config"
+                        )
                     }
-                ) {
-                    Icon(
-                        Icons.Default.Delete,
-                        contentDescription = "Delete Config",
-                        tint = MaterialTheme.colorScheme.error
-                    )
+                    IconButton(
+                        onClick = {
+                            scope.launch {
+                                database.scoreDao().deleteConfig(config)
+                                selectedConfig = null
+                            }
+                        }
+                    ) {
+                        Icon(
+                            Icons.Default.Delete,
+                            contentDescription = "Delete Config",
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    }
                 }
             }
         )

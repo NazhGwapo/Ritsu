@@ -31,6 +31,7 @@ import com.example.ritsu.ui.ScoreScreen
 import com.example.ritsu.ui.OptionsScreen
 import com.example.ritsu.ui.ManageConfigsScreen
 import com.example.ritsu.ui.DebugScreen
+import com.example.ritsu.ui.BoxEditorScreen
 import com.example.ritsu.ui.HeaderComponent
 import com.example.ritsu.ui.NavigationComponent
 import kotlinx.coroutines.delay
@@ -40,7 +41,8 @@ enum class Screen {
     Data,
     Options,
     ManageConfigs,
-    Debug
+    Debug,
+    BoxEditor
 }
 
 class MainActivity : ComponentActivity() {
@@ -120,20 +122,23 @@ fun MainContent() {
             HeaderComponent(
                 currentScreen = currentScreen,
                 onActionClick = {
-                    when (currentScreen) {
-                        Screen.ManageConfigs -> currentScreen = Screen.Options
-                        Screen.Debug -> currentScreen = Screen.Options
-                        Screen.Options -> currentScreen = Screen.Score
-                        else -> currentScreen = Screen.Options
-                    }
+                currentScreen = when (currentScreen) {
+                    Screen.ManageConfigs -> Screen.Options
+                    Screen.Debug -> Screen.Options
+                    Screen.BoxEditor -> Screen.ManageConfigs
+                    Screen.Options -> Screen.Score
+                    else -> Screen.Options
+                }
                 }
             )
         },
         bottomBar = {
-            NavigationComponent(
-                currentScreen = currentScreen,
-                onScreenSelected = { currentScreen = it }
-            )
+            if (currentScreen == Screen.Score || currentScreen == Screen.Data) {
+                NavigationComponent(
+                    currentScreen = currentScreen,
+                    onScreenSelected = { currentScreen = it }
+                )
+            }
         }
     ) { innerPadding ->
         Box(modifier = Modifier.padding(innerPadding)) {
@@ -144,8 +149,11 @@ fun MainContent() {
                     onManageConfigsClick = { currentScreen = Screen.ManageConfigs },
                     onDebugClick = { currentScreen = Screen.Debug }
                 )
-                Screen.ManageConfigs -> ManageConfigsScreen()
+                Screen.ManageConfigs -> ManageConfigsScreen(
+                    onEditConfig = { currentScreen = Screen.BoxEditor }
+                )
                 Screen.Debug -> DebugScreen()
+                Screen.BoxEditor -> BoxEditorScreen()
             }
         }
     }
