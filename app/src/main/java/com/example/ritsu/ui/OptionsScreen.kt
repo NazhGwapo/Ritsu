@@ -21,7 +21,7 @@ import androidx.compose.ui.platform.LocalContext
 import com.example.ritsu.data.ConfigManager
 
 @Composable
-fun OptionsScreen(onManageConfigsClick: () -> Unit) {
+fun OptionsScreen(onManageConfigsClick: () -> Unit, onDebugClick: () -> Unit) {
     val context = LocalContext.current
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument(),
@@ -72,7 +72,7 @@ fun OptionsScreen(onManageConfigsClick: () -> Unit) {
             ListItem(
                 headlineContent = { Text("Debug") },
                 leadingContent = { Icon(Icons.Default.BugReport, contentDescription = null) },
-                modifier = Modifier.clickable { /* No functionality */ }
+                modifier = Modifier.clickable { onDebugClick() }
             )
         }
     }

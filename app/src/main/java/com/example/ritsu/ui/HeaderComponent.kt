@@ -25,6 +25,8 @@ fun HeaderComponent(
                     Screen.Data -> "Data"
                     Screen.Options -> "Options"
                     Screen.ManageConfigs -> "Manage Configs"
+                    Screen.Debug -> "Debug"
+                    Screen.BoxEditor -> "Box Editor"
                 }
             )
         },
