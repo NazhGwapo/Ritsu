@@ -24,10 +24,6 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    room {
-        schemaDirectory("$projectDir/schemas")
-    }
-
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -44,6 +40,10 @@ android {
     buildFeatures {
         compose = true
     }
+}
+
+room {
+    schemaDirectory("$projectDir/schemas")
 }
 
 dependencies {
