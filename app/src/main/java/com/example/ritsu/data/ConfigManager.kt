@@ -42,7 +42,7 @@ object ConfigManager {
                             "Imported ${decoded.gameName} (v${decoded.configVersion})"
                         }
                         decoded.configVersion > existing.configVersion -> {
-                            dao.updateConfig(config.copy(id = existing.id))
+                            dao.updateConfig(config.copy(id = existing.id, displayIconUri = existing.displayIconUri))
                             "Updated ${decoded.gameName} to v${decoded.configVersion}"
                         }
                         else -> "Config ${decoded.gameName} is already up to date (v${existing.configVersion})"

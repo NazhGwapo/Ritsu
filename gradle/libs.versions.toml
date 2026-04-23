@@ -14,6 +14,7 @@ mlkitText = "19.0.1"
 navigationCompose = "2.8.5"
 coil = "3.0.4"
 ksp = "2.0.21-1.0.26"
+androidxRoom = "2.7.0-alpha13"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -46,3 +47,4 @@ android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+room-plugin = { id = "androidx.room", version.ref = "androidxRoom" }

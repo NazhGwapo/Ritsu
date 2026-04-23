@@ -51,7 +51,10 @@ fun ManageConfigsScreen(onEditConfig: () -> Unit) {
     val json = remember { Json { ignoreUnknownKeys = true; prettyPrint = true } }
     
     val configs by database.scoreDao().getAllConfigs().collectAsState(initial = emptyList())
-    var selectedConfig by remember { mutableStateOf<GameConfig?>(null) }
+    var selectedConfigId by remember { mutableStateOf<Long?>(null) }
+    val selectedConfig = remember(selectedConfigId, configs) {
+        configs.find { it.id == selectedConfigId }
+    }
     var showAppPicker by remember { mutableStateOf(false) }
 
     val galleryLauncher = rememberLauncherForActivityResult(
@@ -59,11 +62,10 @@ fun ManageConfigsScreen(onEditConfig: () -> Unit) {
     ) { uri: Uri? ->
         uri?.let {
             scope.launch {
-                val file = saveUriToFile(context, it, "config_${selectedConfig?.id ?: "temp"}.png")
                 selectedConfig?.let { config ->
-                    val updated = config.copy(displayIconUri = file.toURI().toString())
+                    val file = saveUriToFile(context, it, "config_${config.id}.png")
+                    val updated = config.copy(displayIconUri = file.toURI().toString() + "?t=${System.currentTimeMillis()}")
                     database.scoreDao().updateConfig(updated)
-                    selectedConfig = updated
                 }
             }
         }
@@ -119,7 +121,7 @@ fun ManageConfigsScreen(onEditConfig: () -> Unit) {
                             val fieldsCount = configData?.fields?.size ?: 0
                             Text("Fields: $fieldsCount | Version: ${config.configVersion}")
                         },
-                        modifier = Modifier.clickable { selectedConfig = config }
+                        modifier = Modifier.clickable { selectedConfigId = config.id }
                     )
                     HorizontalDivider()
                 }
@@ -146,7 +148,7 @@ fun ManageConfigsScreen(onEditConfig: () -> Unit) {
         var showRaw by remember { mutableStateOf(false) }
 
         AlertDialog(
-            onDismissRequest = { selectedConfig = null },
+            onDismissRequest = { selectedConfigId = null },
             title = {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -240,7 +242,7 @@ fun ManageConfigsScreen(onEditConfig: () -> Unit) {
                 }
             },
             confirmButton = {
-                TextButton(onClick = { selectedConfig = null }) {
+                TextButton(onClick = { selectedConfigId = null }) {
                     Text("Close")
                 }
             },
@@ -249,7 +251,7 @@ fun ManageConfigsScreen(onEditConfig: () -> Unit) {
                     onClick = {
                         scope.launch {
                             database.scoreDao().deleteConfig(config)
-                            selectedConfig = null
+                            selectedConfigId = null
                         }
                     }
                 ) {
@@ -268,12 +270,13 @@ fun ManageConfigsScreen(onEditConfig: () -> Unit) {
             onDismiss = { showAppPicker = false },
             onAppSelected = { appInfo ->
                 scope.launch {
-                    val icon = appInfo.loadIcon(context.packageManager)
-                    val file = saveDrawableToFile(context, icon, "config_${selectedConfig?.id ?: "temp"}.png")
                     selectedConfig?.let { config ->
-                        val updated = config.copy(displayIconUri = file.toURI().toString())
+                        val icon = appInfo.loadIcon(context.packageManager)
+                        val file = saveDrawableToFile(context, icon, "config_${config.id}.png")
+                        val updated = config.copy(
+                            displayIconUri = file.toURI().toString() + "?t=${System.currentTimeMillis()}"
+                        )
                         database.scoreDao().updateConfig(updated)
-                        selectedConfig = updated
                     }
                 }
                 showAppPicker = false

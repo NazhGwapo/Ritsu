@@ -58,7 +58,8 @@ data class GameConfig(
             childColumns = ["configId"],
             onDelete = ForeignKey.CASCADE
         )
-    ]
+    ],
+    indices = [Index(value = ["configId"])]
 )
 data class GenericScore(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -92,7 +93,8 @@ data class GenericScore(
             childColumns = ["scoreId"],
             onDelete = ForeignKey.CASCADE
         )
-    ]
+    ],
+    indices = [Index(value = ["scoreId"])]
 )
 data class ScoreDetail(
     @PrimaryKey(autoGenerate = true) val detailId: Long = 0,
