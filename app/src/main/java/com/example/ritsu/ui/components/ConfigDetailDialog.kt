@@ -1,0 +1,150 @@
+package com.example.ritsu.ui.components
+
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
+import com.example.ritsu.data.GameConfig
+import com.example.ritsu.data.GameConfigData
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.encodeToString
+
+@Composable
+fun ConfigDetailDialog(
+    config: GameConfig,
+    onDismiss: () -> Unit,
+    onDelete: () -> Unit,
+    onPickFromGallery: () -> Unit,
+    onPickFromApps: () -> Unit
+) {
+    val json = remember { Json { ignoreUnknownKeys = true; prettyPrint = true } }
+    val configData = remember(config) {
+        try {
+            json.decodeFromString<GameConfigData>(config.configData)
+        } catch (e: Exception) { null }
+    }
+
+    var showRaw by remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(config.gameName)
+                TextButton(onClick = { showRaw = !showRaw }) {
+                    Text(if (showRaw) "Show Fields" else "Show Raw")
+                }
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 450.dp)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                // Icon Section
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(64.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (config.displayIconUri != null) {
+                            AsyncImage(
+                                model = config.displayIconUri,
+                                contentDescription = null,
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Icon(Icons.Default.Image, contentDescription = null, modifier = Modifier.size(32.dp))
+                        }
+                    }
+                    
+                    Column(modifier = Modifier.padding(start = 16.dp)) {
+                        Button(
+                            onClick = onPickFromGallery,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Pick from Gallery")
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        OutlinedButton(
+                            onClick = onPickFromApps,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Pick from Apps")
+                        }
+                    }
+                }
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+                if (showRaw || configData == null) {
+                    val prettyJson = remember(config.configData) {
+                        try {
+                            val obj = json.decodeFromString<GameConfigData>(config.configData)
+                            json.encodeToString(obj)
+                        } catch (e: Exception) { config.configData }
+                    }
+                    Text(
+                        text = prettyJson,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                } else {
+                    configData.fields.forEach { field ->
+                        ListItem(
+                            headlineContent = { Text(field.label) },
+                            supportingContent = { Text("Key: ${field.key} | Type: ${field.type}") }
+                        )
+                    }
+                    if (configData.formula != null) {
+                        Text(
+                            "Formula: ${configData.formula}",
+                            modifier = Modifier.padding(top = 8.dp),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Close")
+            }
+        },
+        dismissButton = {
+            IconButton(onClick = onDelete) {
+                Icon(
+                    Icons.Default.Delete,
+                    contentDescription = "Delete Config",
+                    tint = MaterialTheme.colorScheme.error
+                )
+            }
+        }
+    )
+}

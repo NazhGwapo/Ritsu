@@ -29,7 +29,7 @@ import com.example.ritsu.ui.theme.RitsuTheme
 import com.example.ritsu.ui.DataScreen
 import com.example.ritsu.ui.ScoreScreen
 import com.example.ritsu.ui.OptionsScreen
-import com.example.ritsu.ui.ManageConfigsScreen
+import com.example.ritsu.ui.screens.ManageConfigsScreen
 import com.example.ritsu.ui.DebugScreen
 import com.example.ritsu.ui.BoxEditorScreen
 import com.example.ritsu.ui.HeaderComponent
