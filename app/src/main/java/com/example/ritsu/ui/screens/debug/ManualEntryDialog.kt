@@ -1,5 +1,7 @@
 package com.example.ritsu.ui.screens.debug
 
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -17,6 +20,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -40,6 +44,10 @@ import com.example.ritsu.data.RitsuDatabase
 import com.example.ritsu.data.ScoreDetail
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun ManualEntryDialog(onDismiss: () -> Unit) {
@@ -60,6 +68,7 @@ fun ManualEntryDialog(onDismiss: () -> Unit) {
     var maxCombo by remember { mutableStateOf("") }
     var accuracy by remember { mutableStateOf("") }
     var playRank by remember { mutableStateOf("") }
+    var timestamp by remember { mutableStateOf(System.currentTimeMillis()) }
 
     // Dynamic Fields for ScoreDetail
     var detailFields by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
@@ -136,6 +145,58 @@ fun ManualEntryDialog(onDismiss: () -> Unit) {
                     TextField(value = playRank, onValueChange = { playRank = it }, label = { Text("Play Rank") }, modifier = Modifier.fillMaxWidth())
 
                     Spacer(modifier = Modifier.height(16.dp))
+                    Text("Timestamp", style = MaterialTheme.typography.titleMedium)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        val calendar = remember { Calendar.getInstance() }
+                        calendar.timeInMillis = timestamp
+                        
+                        val dateFormatter = remember { SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()) }
+                        val timeFormatter = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
+
+                        OutlinedButton(
+                            onClick = {
+                                DatePickerDialog(
+                                    context,
+                                    { _, year, month, dayOfMonth ->
+                                        calendar.set(Calendar.YEAR, year)
+                                        calendar.set(Calendar.MONTH, month)
+                                        calendar.set(Calendar.DAY_OF_MONTH, dayOfMonth)
+                                        timestamp = calendar.timeInMillis
+                                    },
+                                    calendar.get(Calendar.YEAR),
+                                    calendar.get(Calendar.MONTH),
+                                    calendar.get(Calendar.DAY_OF_MONTH)
+                                ).show()
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text(dateFormatter.format(Date(timestamp)))
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        OutlinedButton(
+                            onClick = {
+                                TimePickerDialog(
+                                    context,
+                                    { _, hourOfDay, minute ->
+                                        calendar.set(Calendar.HOUR_OF_DAY, hourOfDay)
+                                        calendar.set(Calendar.MINUTE, minute)
+                                        timestamp = calendar.timeInMillis
+                                    },
+                                    calendar.get(Calendar.HOUR_OF_DAY),
+                                    calendar.get(Calendar.MINUTE),
+                                    true
+                                ).show()
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text(timeFormatter.format(Date(timestamp)))
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
                     Text("Game Specific Fields", style = MaterialTheme.typography.titleMedium)
                     
                     selectedConfigData!!.fields.forEach { field ->
@@ -163,7 +224,7 @@ fun ManualEntryDialog(onDismiss: () -> Unit) {
                                     maxCombo = maxCombo.toIntOrNull() ?: 0,
                                     accuracy = accuracy.toDoubleOrNull() ?: 0.0,
                                     playRank = playRank,
-                                    timestamp = System.currentTimeMillis()
+                                    timestamp = timestamp
                                 )
                                 val scoreId = database.scoreDao().insertScore(score)
                                 

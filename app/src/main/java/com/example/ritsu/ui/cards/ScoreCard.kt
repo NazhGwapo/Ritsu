@@ -26,6 +26,12 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.Image
 import android.graphics.Bitmap
 
+import android.text.format.DateUtils
+import androidx.compose.runtime.remember
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
 @Composable
 fun ScoreCard(
     score: GenericScore,
@@ -109,8 +115,17 @@ fun ScoreCard(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
+                val timeInfo = remember(score.timestamp) {
+                    val relativeTime = DateUtils.getRelativeTimeSpanString(
+                        score.timestamp,
+                        System.currentTimeMillis(),
+                        DateUtils.SECOND_IN_MILLIS
+                    ).toString()
+                    val timeFormat = SimpleDateFormat("h:mm a", Locale.getDefault())
+                    "$relativeTime, ${timeFormat.format(Date(score.timestamp))}"
+                }
                 Text(
-                    text = "Time elapsed, X:XXPM", // Placeholder as per image
+                    text = timeInfo,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                     fontStyle = FontStyle.Italic

@@ -25,9 +25,28 @@ import androidx.compose.foundation.lazy.items
 import com.example.ritsu.data.GenericScore
 import com.example.ritsu.ui.cards.ScoreCard
 
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.platform.LocalContext
+import com.example.ritsu.data.RitsuDatabase
+
 @Composable
 fun ScoreScreen() {
+    val context = LocalContext.current
+    val database = remember { RitsuDatabase.getDatabase(context) }
     var searchQuery by remember { mutableStateOf("") }
+
+    val scores by database.scoreDao().getAllScores().collectAsState(initial = emptyList())
+    val configs by database.scoreDao().getAllConfigs().collectAsState(initial = emptyList())
+    val configMap = remember(configs) { configs.associateBy { it.id } }
+
+    val filteredScores = remember(searchQuery, scores, configMap) {
+        scores.filter { fullRecord ->
+            val score = fullRecord.genericScore
+            val gameName = configMap[score.configId]?.gameName ?: ""
+            score.songTitle.contains(searchQuery, ignoreCase = true) ||
+                    gameName.contains(searchQuery, ignoreCase = true)
+        }
+    }
 
     Column(
         modifier = Modifier.fillMaxSize()
@@ -42,14 +61,34 @@ fun ScoreScreen() {
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
             singleLine = true
         )
-        
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth(),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(text = "No scores yet")
+
+        if (filteredScores.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(text = if (searchQuery.isEmpty()) "No scores yet" else "No matching scores")
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                contentPadding = PaddingValues(bottom = 16.dp)
+            ) {
+                items(filteredScores) { fullRecord ->
+                    val score = fullRecord.genericScore
+                    val gameName = configMap[score.configId]?.gameName ?: "Unknown Game"
+                    ScoreCard(
+                        score = score,
+                        gameName = gameName,
+                        onClick = { /* TODO: Show details */ },
+                        onMoreClick = { /* TODO: Options */ }
+                    )
+                }
+            }
         }
     }
 }
