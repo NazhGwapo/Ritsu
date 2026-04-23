@@ -118,7 +118,7 @@ fun ScoreCard(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = "[${score.difficultyName}] ${if (score.difficultyVal % 1.0 == 0.0) score.difficultyVal.toInt() else score.difficultyVal} - ${"%.2f".format(score.accuracy)}% ${score.playRank}",
+                    text = "[${score.difficultyName}] ${score.difficultyVal} - ${"%.2f".format(score.accuracy)}% ${score.playRank}",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                     maxLines = 1,
@@ -162,7 +162,8 @@ fun ScoreCardPreview() {
                 configId = 1,
                 songTitle = "Song Name",
                 difficultyName = "Difficulty",
-                difficultyVal = 22.0,
+                difficultyVal = "22.0",
+                difficultySortValue = 22.0,
                 totalScore = 1234567,
                 maxCombo = 1000,
                 accuracy = 98.76,

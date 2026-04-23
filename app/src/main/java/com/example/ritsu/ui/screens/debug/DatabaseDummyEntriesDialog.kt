@@ -161,11 +161,15 @@ private fun createRandomScore(configId: Long): GenericScore {
     val diffs = listOf("Easy", "Normal", "Hard", "Expert", "Master")
     val ranks = listOf("S", "SS", "SSS", "A", "B")
     
+    val randomDiffVal = (Random.nextDouble(1.0, 30.0) * 100).toInt() / 100.0
+    val diffStr = if (Random.nextBoolean()) "$randomDiffVal+" else "$randomDiffVal"
+    
     return GenericScore(
         configId = configId,
         songTitle = songs.random(),
         difficultyName = diffs.random(),
-        difficultyVal = (Random.nextDouble(1.0, 30.0) * 100).toInt() / 100.0,
+        difficultyVal = diffStr,
+        difficultySortValue = GenericScore.parseDifficulty(diffStr),
         totalScore = Random.nextLong(500000, 1000000),
         maxCombo = Random.nextInt(100, 2000),
         accuracy = (Random.nextDouble(80.0, 100.0) * 100).toInt() / 100.0,

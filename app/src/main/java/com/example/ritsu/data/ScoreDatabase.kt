@@ -65,13 +65,23 @@ data class GenericScore(
     val configId: Long, // Links to the game template
     val songTitle: String,
     val difficultyName: String,
-    val difficultyVal: Double,
+    val difficultyVal: String,
+    val difficultySortValue: Double,
     val totalScore: Long,
     val maxCombo: Int,
     val accuracy: Double,
     val playRank: String,
     val timestamp: Long
-)
+) {
+    companion object {
+        fun parseDifficulty(diffStr: String): Double {
+            val numericPart = diffStr.filter { it.isDigit() || it == '.' }.toDoubleOrNull() ?: 0.0
+            var bonus = 0.0
+            if (diffStr.contains('+')) bonus += 0.5
+            return numericPart + bonus
+        }
+    }
+}
 
 @Entity(
     tableName = "score_details",
@@ -132,7 +142,7 @@ interface ScoreDao {
     suspend fun insertDetails(details: List<ScoreDetail>)
 
     @Transaction // Necessary because it queries multiple tables
-    @Query("SELECT * FROM generic_scores ORDER BY timestamp DESC")
+    @Query("SELECT * FROM generic_scores ORDER BY difficultySortValue DESC, timestamp DESC")
     fun getAllScores(): Flow<List<FullScoreRecord>>
 
     @Query("SELECT * FROM game_configs")
@@ -150,7 +160,7 @@ interface ScoreDao {
 
 // --- 4. THE DATABASE ---
 
-@Database(entities = [GameConfig::class, GenericScore::class, ScoreDetail::class], version = 5)
+@Database(entities = [GameConfig::class, GenericScore::class, ScoreDetail::class], version = 6)
 abstract class RitsuDatabase : RoomDatabase() {
     abstract fun scoreDao(): ScoreDao
 
