@@ -80,10 +80,12 @@ fun ScoreScreen() {
             ) {
                 items(filteredScores) { fullRecord ->
                     val score = fullRecord.genericScore
-                    val gameName = configMap[score.configId]?.gameName ?: "Unknown Game"
+                    val config = configMap[score.configId]
+                    val gameName = config?.gameName ?: "Unknown Game"
                     ScoreCard(
                         score = score,
                         gameName = gameName,
+                        displayIconUri = config?.displayIconUri,
                         onClick = { /* TODO: Show details */ },
                         onMoreClick = { /* TODO: Options */ }
                     )

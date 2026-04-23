@@ -21,9 +21,10 @@ import androidx.compose.ui.unit.sp
 import com.example.ritsu.data.GenericScore
 import com.example.ritsu.ui.theme.RitsuTheme
 
-import androidx.compose.ui.graphics.asImageBitmap
+import coil3.compose.AsyncImage
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.Image
+import androidx.compose.ui.graphics.asImageBitmap
 import android.graphics.Bitmap
 
 import android.text.format.DateUtils
@@ -37,6 +38,7 @@ fun ScoreCard(
     score: GenericScore,
     gameName: String = "Game Name",
     imageBitmap: Bitmap? = null,
+    displayIconUri: String? = null,
     onClick: () -> Unit = {},
     onMoreClick: () -> Unit = {}
 ) {
@@ -69,7 +71,14 @@ fun ScoreCard(
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                if (imageBitmap != null) {
+                if (displayIconUri != null) {
+                    AsyncImage(
+                        model = displayIconUri,
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else if (imageBitmap != null) {
                     Image(
                         bitmap = imageBitmap.asImageBitmap(),
                         contentDescription = null,

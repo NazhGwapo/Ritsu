@@ -45,7 +45,8 @@ data class GameConfig(
     val gameName: String,
     // Store JSON representation of fields and formula
     val configData: String,
-    val configVersion: Int = 1
+    val configVersion: Int = 1,
+    val displayIconUri: String? = null
 )
 
 @Entity(
@@ -139,11 +140,17 @@ interface ScoreDao {
 
     @Delete
     suspend fun deleteConfig(config: GameConfig)
+
+    @Query("DELETE FROM generic_scores")
+    suspend fun deleteAllScores()
+
+    @Query("DELETE FROM game_configs")
+    suspend fun deleteAllConfigs()
 }
 
 // --- 4. THE DATABASE ---
 
-@Database(entities = [GameConfig::class, GenericScore::class, ScoreDetail::class], version = 4)
+@Database(entities = [GameConfig::class, GenericScore::class, ScoreDetail::class], version = 5)
 abstract class RitsuDatabase : RoomDatabase() {
     abstract fun scoreDao(): ScoreDao
 
