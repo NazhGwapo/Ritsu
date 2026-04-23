@@ -157,7 +157,7 @@ fun DatabaseDummyEntriesDialog(onDismiss: () -> Unit) {
 }
 
 private fun createRandomScore(configId: Long): GenericScore {
-    val songs = listOf("Stellar Stellar", "Ghost", "Phony", "Identity", "Salamander", "Lower One's Eyes")
+    val songs = listOf("Maihime", "Ghost", "Phony", "Identity", "Harumachi Clover (TV Size)", "Catch a Fire", "Umapyoi Densetsu", "Blue Zenith", "Lagtrain", "Cerise", "CHAMPION GIRL", "Zurui Magnetic Today", "Shining Lights", "Hysteric Night Girl -Awakening-", "Aozora Jumping Heart", "BRAVE JEWEL", "Oedo Controller (feat. Toriena)", "Aimai Attitude (feat. Sanso Nakamura)", "Don't Say Lazy! (YUC'e Remix)", "Super-Slow-Internet-San", "Fluorite", "Tokimeki Scramble", "Raise Your Hand (feat. Such)", "Undercover (Teddyloid Remix)", "Secret Dance Hall (feat. PSYQUI)", "Photon Melodies (TAKU INOUE Remix)", "Attsu Attsu Tokonatsu Love Summer", "Luna say maybe", "Yang Guang Cai Hong Xiao Bai Ma", "I'm getting on the bus to the other world")
     val diffs = listOf("Easy", "Normal", "Hard", "Expert", "Master")
     val ranks = listOf("S", "SS", "SSS", "A", "B")
     
