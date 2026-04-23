@@ -144,7 +144,7 @@ interface ScoreDao {
     suspend fun insertDetails(details: List<ScoreDetail>)
 
     @Transaction // Necessary because it queries multiple tables
-    @Query("SELECT * FROM generic_scores ORDER BY difficultySortValue DESC, timestamp DESC")
+    @Query("SELECT * FROM generic_scores ORDER BY timestamp DESC")
     fun getAllScores(): Flow<List<FullScoreRecord>>
 
     @Query("SELECT * FROM game_configs")
