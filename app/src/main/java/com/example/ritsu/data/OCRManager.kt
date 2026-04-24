@@ -34,7 +34,7 @@ class OCRManager {
         config.rankRect?.let { extractedData["playRank"] = extractTextFromRect(result, it, width, height) }
 
         // Extract custom fields
-        config.fields.forEach { field ->
+        config.allFieldsWithCategory.forEach { (field, _) ->
             field.ocrRect?.let { rect ->
                 extractedData[field.key] = extractTextFromRect(result, rect, width, height)
             }

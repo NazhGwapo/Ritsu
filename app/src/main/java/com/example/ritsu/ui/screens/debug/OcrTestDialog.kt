@@ -216,7 +216,7 @@ fun OcrTestDialog(onDismiss: () -> Unit) {
                                 config.difficultyNameRect?.let { drawRect(it, Color.Yellow) }
                                 config.difficultyValRect?.let { drawRect(it, Color.Cyan) }
                                 config.rankRect?.let { drawRect(it, Color.Magenta) }
-                                config.fields.forEach { field ->
+                                config.allFieldsWithCategory.forEach { (field, _) ->
                                     field.ocrRect?.let { drawRect(it, Color.White) }
                                 }
 

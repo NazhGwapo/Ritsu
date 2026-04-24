@@ -124,11 +124,12 @@ fun DatabaseDummyEntriesDialog(onDismiss: () -> Unit) {
                                     val randomScore = createRandomScore(config.id)
                                     val scoreId = database.scoreDao().insertScore(randomScore)
                                     
-                                    val details = configData.fields.map { field ->
+                                    val details = configData.allFieldsWithCategory.map { (field, category) ->
                                         ScoreDetail(
                                             scoreId = scoreId,
                                             key = field.key,
-                                            value = Random.nextInt(0, 1000).toString()
+                                            value = Random.nextInt(0, 1000).toString(),
+                                            category = category
                                         )
                                     }
                                     database.scoreDao().insertDetails(details)

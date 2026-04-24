@@ -126,7 +126,7 @@ fun ManualEntryDialog(onDismiss: () -> Unit) {
                                     selectedConfigData = configData
                                     expanded = false
                                     // Reset detail fields when config changes
-                                    detailFields = configData.fields.associate { it.key to "" }
+                                    detailFields = configData.allFieldsWithCategory.associate { it.first.key to "" }
                                 }
                             )
                         }
@@ -199,7 +199,7 @@ fun ManualEntryDialog(onDismiss: () -> Unit) {
                     Spacer(modifier = Modifier.height(16.dp))
                     Text("Game Specific Fields", style = MaterialTheme.typography.titleMedium)
                     
-                    selectedConfigData!!.fields.forEach { field ->
+                    selectedConfigData!!.allFieldsWithCategory.forEach { (field, _) ->
                         TextField(
                             value = detailFields[field.key] ?: "",
                             onValueChange = { newValue ->
@@ -229,11 +229,12 @@ fun ManualEntryDialog(onDismiss: () -> Unit) {
                                 )
                                 val scoreId = database.scoreDao().insertScore(score)
                                 
-                                val details = detailFields.map { (key, value) ->
+                                val details = selectedConfigData!!.allFieldsWithCategory.map { (field, category) ->
                                     ScoreDetail(
                                         scoreId = scoreId,
-                                        key = key,
-                                        value = value
+                                        key = field.key,
+                                        value = detailFields[field.key] ?: "",
+                                        category = category
                                     )
                                 }
                                 database.scoreDao().insertDetails(details)

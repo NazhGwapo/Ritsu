@@ -2,39 +2,8 @@ package com.example.ritsu.data
 
 import androidx.room.*
 import kotlinx.coroutines.flow.Flow
-import kotlinx.serialization.Serializable
 
 // --- 1. THE ENTITIES (The Tables) ---
-@Serializable
-data class OcrRect(
-    val x: Float, // Top-left X (0.0 - 1.0)
-    val y: Float, // Top-left Y (0.0 - 1.0)
-    val w: Float, // Width (0.0 - 1.0)
-    val h: Float  // Height (0.0 - 1.0)
-)
-
-@Serializable
-data class ConfigField(
-    val key: String,
-    val label: String,
-    val type: String = "number",
-    val ocrRect: OcrRect? = null // Optional: if null, OCR ignores this field
-)
-
-@Serializable
-data class GameConfigData(
-    val gameName: String,
-    val configVersion: Int = 1,
-    val fields: List<ConfigField>,
-    val formula: String? = null,
-    // Add specific rects for the "Generic" table data
-    val titleRect: OcrRect? = null,
-    val scoreRect: OcrRect? = null,
-    val comboRect: OcrRect? = null,
-    val difficultyNameRect: OcrRect? = null,
-    val difficultyValRect: OcrRect? = null,
-    val rankRect: OcrRect? = null
-)
 
 @Entity(
     tableName = "game_configs",
@@ -100,7 +69,8 @@ data class ScoreDetail(
     @PrimaryKey(autoGenerate = true) val detailId: Long = 0,
     val scoreId: Long,
     val key: String,   // e.g., "Perfect"
-    val value: String  // e.g., "450"
+    val value: String, // e.g., "450"
+    val category: String // e.g., "Judgment", "Metric", "Misc"
 )
 
 // --- 2. THE RELATION (The "Full" Object) ---

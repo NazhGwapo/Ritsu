@@ -105,7 +105,7 @@ fun ManageConfigsScreen(onEditConfig: () -> Unit) {
                         },
                         headlineContent = { Text(config.gameName) },
                         supportingContent = {
-                            val fieldsCount = configData?.fields?.size ?: 0
+                            val fieldsCount = configData?.allFieldsWithCategory?.size ?: 0
                             Text("Fields: $fieldsCount | Version: ${config.configVersion}")
                         },
                         modifier = Modifier.clickable { selectedConfigId = config.id }

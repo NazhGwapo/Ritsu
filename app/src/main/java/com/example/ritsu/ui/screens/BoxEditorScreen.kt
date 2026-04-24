@@ -221,8 +221,14 @@ fun BottomSelector(
             add("difficultyNameRect" to "Diff Name")
             add("difficultyValRect" to "Diff Val")
             add("rankRect" to "Rank")
-            data.fields.forEachIndexed { index, field ->
-                add("field_$index" to field.label)
+            data.judgments.forEachIndexed { index, field ->
+                add("judgment_$index" to field.label)
+            }
+            data.metrics.forEachIndexed { index, field ->
+                add("metric_$index" to field.label)
+            }
+            data.misc.forEachIndexed { index, field ->
+                add("misc_$index" to field.label)
             }
         }
     }
@@ -338,8 +344,14 @@ fun EditorCanvas(
                             add(Triple("difficultyNameRect", "Diff Name", configData.difficultyNameRect))
                             add(Triple("difficultyValRect", "Diff Val", configData.difficultyValRect))
                             add(Triple("rankRect", "Rank", configData.rankRect))
-                            configData.fields.forEachIndexed { index, field ->
-                                add(Triple("field_$index", field.label, field.ocrRect))
+                            configData.judgments.forEachIndexed { index, field ->
+                                add(Triple("judgment_$index", field.label, field.ocrRect))
+                            }
+                            configData.metrics.forEachIndexed { index, field ->
+                                add(Triple("metric_$index", field.label, field.ocrRect))
+                            }
+                            configData.misc.forEachIndexed { index, field ->
+                                add(Triple("misc_$index", field.label, field.ocrRect))
                             }
                         }
                     }
@@ -504,12 +516,28 @@ fun GameConfigData.updateRect(key: String, rect: OcrRect?): GameConfigData {
         key == "difficultyNameRect" -> copy(difficultyNameRect = rect)
         key == "difficultyValRect" -> copy(difficultyValRect = rect)
         key == "rankRect" -> copy(rankRect = rect)
-        key.startsWith("field_") -> {
-            val index = key.substringAfter("field_").toIntOrNull()
-            if (index != null && index in fields.indices) {
-                val newFields = fields.toMutableList()
-                newFields[index] = newFields[index].copy(ocrRect = rect)
-                copy(fields = newFields)
+        key.startsWith("judgment_") -> {
+            val index = key.substringAfter("judgment_").toIntOrNull()
+            if (index != null && index in judgments.indices) {
+                val newList = judgments.toMutableList()
+                newList[index] = newList[index].copy(ocrRect = rect)
+                copy(judgments = newList)
+            } else this
+        }
+        key.startsWith("metric_") -> {
+            val index = key.substringAfter("metric_").toIntOrNull()
+            if (index != null && index in metrics.indices) {
+                val newList = metrics.toMutableList()
+                newList[index] = newList[index].copy(ocrRect = rect)
+                copy(metrics = newList)
+            } else this
+        }
+        key.startsWith("misc_") -> {
+            val index = key.substringAfter("misc_").toIntOrNull()
+            if (index != null && index in misc.indices) {
+                val newList = misc.toMutableList()
+                newList[index] = newList[index].copy(ocrRect = rect)
+                copy(misc = newList)
             } else this
         }
         else -> this

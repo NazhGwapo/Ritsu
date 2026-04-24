@@ -116,10 +116,10 @@ fun ConfigDetailDialog(
                         style = MaterialTheme.typography.bodySmall
                     )
                 } else {
-                    configData.fields.forEach { field ->
+                    configData.allFieldsWithCategory.forEach { (field, category) ->
                         ListItem(
                             headlineContent = { Text(field.label) },
-                            supportingContent = { Text("Key: ${field.key} | Type: ${field.type}") }
+                            supportingContent = { Text("Category: $category | Key: ${field.key} | Type: ${field.type}") }
                         )
                     }
                     if (configData.formula != null) {
