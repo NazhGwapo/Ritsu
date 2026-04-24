@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -41,12 +42,12 @@ fun ScoreScreen() {
     val database = remember { RitsuDatabase.getDatabase(context) }
     var searchQuery by remember { mutableStateOf("") }
 
-    val scores by database.scoreDao().getAllScores().collectAsState(initial = emptyList())
-    val configs by database.scoreDao().getAllConfigs().collectAsState(initial = emptyList())
-    val configMap = remember(configs) { configs.associateBy { it.id } }
+    val scores by database.scoreDao().getAllScores().collectAsState(initial = null)
+    val configs by database.scoreDao().getAllConfigs().collectAsState(initial = null)
+    val configMap = remember(configs) { configs?.associateBy { it.id } ?: emptyMap() }
 
     val filteredScores = remember(searchQuery, scores, configMap) {
-        scores.filter { fullRecord ->
+        scores?.filter { fullRecord ->
             val score = fullRecord.genericScore
             val gameName = configMap[score.configId]?.gameName ?: ""
             score.songTitle.contains(searchQuery, ignoreCase = true) ||
@@ -68,7 +69,16 @@ fun ScoreScreen() {
             singleLine = true
         )
 
-        if (filteredScores.isEmpty()) {
+        if (filteredScores == null) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        } else if (filteredScores.isEmpty()) {
             Box(
                 modifier = Modifier
                     .weight(1f)

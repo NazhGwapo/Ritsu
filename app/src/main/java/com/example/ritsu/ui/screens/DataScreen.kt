@@ -9,15 +9,21 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.example.ritsu.R
+import com.example.ritsu.data.RitsuDatabase
 import java.text.SimpleDateFormat
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DataScreen() {
+    val context = LocalContext.current
+    val database = remember { RitsuDatabase.getDatabase(context) }
+    val scores by database.scoreDao().getAllScores().collectAsState(initial = null)
+
     val ranges = listOf("Day", "Week", "Month", "Year")
     var selectedRange by remember { mutableStateOf(ranges[0]) }
     var rangeExpanded by remember { mutableStateOf(false) }
@@ -125,14 +131,18 @@ fun DataScreen() {
         }
 
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Image(
-                    painter = painterResource(id = R.drawable.ohnoes),
-                    contentDescription = null,
-                    modifier = Modifier.size(128.dp)
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(text = "No data for $selectedOption")
+            if (scores == null) {
+                CircularProgressIndicator()
+            } else {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Image(
+                        painter = painterResource(id = R.drawable.ohnoes),
+                        contentDescription = null,
+                        modifier = Modifier.size(128.dp)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(text = "No data for $selectedOption")
+                }
             }
         }
     }
