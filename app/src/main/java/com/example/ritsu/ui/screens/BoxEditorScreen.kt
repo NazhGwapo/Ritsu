@@ -35,7 +35,7 @@ fun BoxEditorScreen() {
     val configs by database.scoreDao().getAllConfigs().collectAsState(initial = emptyList())
     var selectedConfig by remember { mutableStateOf<GameConfig?>(null) }
     var imageUri by remember { mutableStateOf<Uri?>(null) }
-    var showFieldEditor by remember { mutableStateOf(false) }
+    var showFieldEditor by remember { mutableStateOf(value = false) }
     val snackbarHostState = remember { SnackbarHostState() }
 
     val configData by editorViewModel.configData.collectAsState()
@@ -43,14 +43,13 @@ fun BoxEditorScreen() {
 
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
-        onResult = { uri -> imageUri = uri }
-    )
+    ) { uri -> imageUri = uri }
 
     LaunchedEffect(selectedConfig) {
         val data = selectedConfig?.let {
             try {
                 json.decodeFromString<GameConfigData>(it.configData)
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 null
             }
         }
@@ -73,24 +72,24 @@ fun BoxEditorScreen() {
                         configData?.let { data ->
                             scope.launch {
                                 val updatedConfig = config.copy(
-                                    configData = json.encodeToString(data)
+                                    configData = json.encodeToString(data),
                                 )
                                 database.scoreDao().updateConfig(updatedConfig)
                                 snackbarHostState.showSnackbar("Configuration saved")
                             }
                         }
                     }
-                }
+                },
             )
         },
         bottomBar = {
             if (configData != null) {
                 BottomSelector(
                     viewModel = editorViewModel,
-                    onEditField = { showFieldEditor = true }
+                    onEditField = { showFieldEditor = true },
                 )
             }
-        }
+        },
     ) { innerPadding ->
         Box(
             modifier = Modifier
@@ -98,14 +97,14 @@ fun BoxEditorScreen() {
                 .fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            if (imageUri != null && configData != null) {
+            if ((imageUri != null) && (configData != null)) {
                 EditorCanvas(
                     imageUri = imageUri!!,
                     viewModel = editorViewModel,
                     snackbarHostState = snackbarHostState
                 )
 
-                if (showFieldEditor && selectedRectKey != null) {
+                if (showFieldEditor && (selectedRectKey != null)) {
                     FieldEditorDialog(
                         configData = configData!!,
                         selectedKey = selectedRectKey!!,
@@ -129,7 +128,7 @@ fun BoxEditorScreen() {
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    if (selectedConfig != null && imageUri == null) {
+                    if ((selectedConfig != null) && (imageUri == null)) {
                         Button(
                             onClick = { launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
                             modifier = Modifier.padding(top = 16.dp)

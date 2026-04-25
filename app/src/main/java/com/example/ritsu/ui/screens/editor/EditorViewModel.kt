@@ -24,7 +24,7 @@ class EditorViewModel : ViewModel() {
     val mode: StateFlow<EditorMode> = _mode.asStateFlow()
 
     // Transform State
-    var scale by mutableStateOf(1f)
+    var scale by mutableFloatStateOf(1f)
     var offset by mutableStateOf(Offset.Zero)
     
     // UI State
@@ -68,19 +68,19 @@ class EditorViewModel : ViewModel() {
 
     // Helper to convert screen coordinates to normalized coordinates (0.0 - 1.0)
     fun screenToNormalized(screenOffset: Offset): Offset {
-        if (imageSize.width == 0f || imageSize.height == 0f) return Offset.Zero
+        if ((imageSize.width == 0f) || (imageSize.height == 0f)) return Offset.Zero
         
         // Remove scale and translation
         val canvasX = (screenOffset.x - offset.x) / scale
         val canvasY = (screenOffset.y - offset.y) / scale
         
         // Center the image within the container coordinate system
-        val centeredX = canvasX - (containerSize.width - imageSize.width) / 2
-        val centeredY = canvasY - (containerSize.height - imageSize.height) / 2
+        val centeredX = canvasX - ((containerSize.width - imageSize.width) / 2)
+        val centeredY = canvasY - ((containerSize.height - imageSize.height) / 2)
         
         return Offset(
             x = (centeredX / imageSize.width).coerceIn(0f, 1f),
-            y = (centeredY / imageSize.height).coerceIn(0f, 1f)
+            y = (centeredY / imageSize.height).coerceIn(0f, 1f),
         )
     }
 
@@ -89,12 +89,12 @@ class EditorViewModel : ViewModel() {
         val centeredX = normOffset.x * imageSize.width
         val centeredY = normOffset.y * imageSize.height
         
-        val canvasX = centeredX + (containerSize.width - imageSize.width) / 2
-        val canvasY = centeredY + (containerSize.height - imageSize.height) / 2
+        val canvasX = centeredX + ((containerSize.width - imageSize.width) / 2)
+        val canvasY = centeredY + ((containerSize.height - imageSize.height) / 2)
         
         return Offset(
             x = canvasX * scale + offset.x,
-            y = canvasY * scale + offset.y
+            y = canvasY * scale + offset.y,
         )
     }
 }
