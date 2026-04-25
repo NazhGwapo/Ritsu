@@ -1,5 +1,6 @@
 package com.example.ritsu.ui.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -119,7 +120,24 @@ fun ConfigDetailDialog(
                     configData.allFieldsWithCategory.forEach { (field, category) ->
                         ListItem(
                             headlineContent = { Text(field.label) },
-                            supportingContent = { Text("Category: $category | Key: ${field.key} | Type: ${field.type}") }
+                            supportingContent = {
+                                Column {
+                                    Text("Category: $category | Key: ${field.key} | Type: ${field.type}")
+                                    if (field.type == "boolean" && field.targetColor != null) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text("Target Color: ")
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(16.dp)
+                                                    .clip(RoundedCornerShape(2.dp))
+                                                    .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(2.dp))
+                                                    .background(androidx.compose.ui.graphics.Color(field.targetColor))
+                                            )
+                                            Text(" | Threshold: ${"%.2f".format(field.threshold)}")
+                                        }
+                                    }
+                                }
+                            }
                         )
                     }
                     if (configData.formula != null) {

@@ -31,7 +31,7 @@ import com.example.ritsu.ui.ScoreScreen
 import com.example.ritsu.ui.OptionsScreen
 import com.example.ritsu.ui.screens.ManageConfigsScreen
 import com.example.ritsu.ui.DebugScreen
-import com.example.ritsu.ui.BoxEditorScreen
+import com.example.ritsu.ui.screens.BoxEditorScreen
 import com.example.ritsu.ui.HeaderComponent
 import com.example.ritsu.ui.NavigationComponent
 import androidx.compose.animation.fadeIn
