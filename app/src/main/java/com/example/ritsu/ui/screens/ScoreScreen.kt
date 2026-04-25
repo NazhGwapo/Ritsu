@@ -32,9 +32,11 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.LaunchedEffect
 import com.example.ritsu.R
 import com.example.ritsu.ui.cards.ScoreCard
+import com.example.ritsu.ui.components.ScoreDetailsDialog
 
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.platform.LocalContext
+import com.example.ritsu.data.FullScoreRecord
 import com.example.ritsu.data.RitsuDatabase
 
 @Composable
@@ -44,6 +46,8 @@ fun ScoreScreen(
     val context = LocalContext.current
     val database = remember { RitsuDatabase.getDatabase(context) }
     var searchQuery by remember { mutableStateOf("") }
+
+    var selectedScore by remember { mutableStateOf<FullScoreRecord?>(null) }
 
     val scores by database.scoreDao().getAllScores().collectAsState(initial = null)
     val configs by database.scoreDao().getAllConfigs().collectAsState(initial = null)
@@ -122,10 +126,22 @@ fun ScoreScreen(
                         score = score,
                         gameName = gameName,
                         displayIconUri = config?.displayIconUri,
-                        onClick = { /* TODO: Show details */ },
+                        onClick = { selectedScore = fullRecord },
                     ) { /* TODO: Options */ }
                 }
             }
+        }
+    }
+
+    selectedScore?.let { record ->
+        val config = configMap[record.genericScore.configId]
+        if (config != null) {
+            ScoreDetailsDialog(
+                scoreRecord = record,
+                gameConfig = config,
+                scoreDao = database.scoreDao(),
+                onDismiss = { selectedScore = null }
+            )
         }
     }
 }
