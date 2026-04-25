@@ -58,17 +58,9 @@ fun ManageConfigsScreen(onEditConfig: () -> Unit) {
         }
     }
 
-    Scaffold(
-        floatingActionButton = {
-            FloatingActionButton(onClick = onEditConfig) {
-                Icon(Icons.Default.Edit, contentDescription = "Edit Configs")
-            }
-        }
-    ) { padding ->
+    Box(modifier = Modifier.fillMaxSize()) {
         Surface(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding),
+            modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background
         ) {
             LazyColumn(
@@ -122,6 +114,15 @@ fun ManageConfigsScreen(onEditConfig: () -> Unit) {
                     }
                 }
             }
+        }
+
+        FloatingActionButton(
+            onClick = onEditConfig,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp)
+        ) {
+            Icon(Icons.Default.Edit, contentDescription = "Edit Configs")
         }
     }
 

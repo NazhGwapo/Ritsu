@@ -60,4 +60,22 @@ object ConfigManager {
             }
         }
     }
+
+    fun handleExport(context: Context, uri: Uri, configData: String) {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                context.contentResolver.openOutputStream(uri)?.use { outputStream ->
+                    outputStream.write(configData.toByteArray())
+                }
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "Configuration exported successfully", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "Export failed: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
 }
