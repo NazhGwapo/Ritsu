@@ -133,6 +133,8 @@ fun MainContent() {
         else -> Screen.Score
     }
 
+    var scoreScrollToTopSignal by remember { mutableStateOf(0L) }
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
@@ -151,12 +153,16 @@ fun MainContent() {
                 NavigationComponent(
                     currentScreen = currentScreen,
                     onScreenSelected = { screen ->
-                        navController.navigate(screen.name) {
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                saveState = true
+                        if (screen == Screen.Score && currentScreen == Screen.Score) {
+                            scoreScrollToTopSignal = System.currentTimeMillis()
+                        } else {
+                            navController.navigate(screen.name) {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
                             }
-                            launchSingleTop = true
-                            restoreState = true
                         }
                     }
                 )
@@ -172,7 +178,7 @@ fun MainContent() {
             popEnterTransition = { fadeIn(animationSpec = tween(200)) },
             popExitTransition = { fadeOut(animationSpec = tween(200)) }
         ) {
-            composable(Screen.Score.name) { ScoreScreen() }
+            composable(Screen.Score.name) { ScoreScreen(scrollToTopSignal = scoreScrollToTopSignal) }
             composable(Screen.Data.name) { DataScreen() }
             composable(Screen.Options.name) {
                 OptionsScreen(

@@ -118,7 +118,7 @@ fun ScoreCard(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = "[${score.difficultyName}] ${score.difficultyVal} - ${"%.2f".format(score.accuracy)}% ${score.playRank}",
+                    text = "[${score.difficultyName}] ${score.difficultyVal} - ${"%,d".format(score.totalScore)} - ${"%.2f".format(score.accuracy)}%",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                     maxLines = 1,

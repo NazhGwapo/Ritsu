@@ -39,6 +39,7 @@ fun ScoreCardEditorDialog(onDismiss: () -> Unit) {
     var gameName by remember { mutableStateOf("Game") }
     var difficultyName by remember { mutableStateOf("Difficulty") }
     var difficultyVal by remember { mutableStateOf("22.0") }
+    var totalScore by remember { mutableStateOf("1234567") }
     var accuracy by remember { mutableStateOf("98.76") }
     var playRank by remember { mutableStateOf("RANK") }
     var selectedBitmap by remember { mutableStateOf<Bitmap?>(null) }
@@ -91,7 +92,7 @@ fun ScoreCardEditorDialog(onDismiss: () -> Unit) {
                         difficultyName = difficultyName,
                         difficultyVal = difficultyVal,
                         difficultySortValue = GenericScore.parseDifficulty(difficultyVal),
-                        totalScore = 0,
+                        totalScore = totalScore.toLongOrNull() ?: 0L,
                         maxCombo = 0,
                         accuracy = accuracy.toDoubleOrNull() ?: 0.0,
                         playRank = playRank,
@@ -111,6 +112,7 @@ fun ScoreCardEditorDialog(onDismiss: () -> Unit) {
                     TextField(value = gameName, onValueChange = { gameName = it }, label = { Text("Game Name") }, modifier = Modifier.fillMaxWidth())
                     TextField(value = difficultyName, onValueChange = { difficultyName = it }, label = { Text("Difficulty Name") }, modifier = Modifier.fillMaxWidth())
                     TextField(value = difficultyVal, onValueChange = { difficultyVal = it }, label = { Text("Difficulty Value") }, modifier = Modifier.fillMaxWidth())
+                    TextField(value = totalScore, onValueChange = { totalScore = it }, label = { Text("Total Score") }, modifier = Modifier.fillMaxWidth())
                     TextField(value = accuracy, onValueChange = { accuracy = it }, label = { Text("Accuracy") }, modifier = Modifier.fillMaxWidth())
                     TextField(value = playRank, onValueChange = { playRank = it }, label = { Text("Play Rank") }, modifier = Modifier.fillMaxWidth())
                     

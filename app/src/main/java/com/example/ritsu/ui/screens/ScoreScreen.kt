@@ -28,6 +28,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.LaunchedEffect
 import com.example.ritsu.R
 import com.example.ritsu.data.GenericScore
 import com.example.ritsu.ui.cards.ScoreCard
@@ -37,7 +39,9 @@ import androidx.compose.ui.platform.LocalContext
 import com.example.ritsu.data.RitsuDatabase
 
 @Composable
-fun ScoreScreen() {
+fun ScoreScreen(
+    scrollToTopSignal: Long = 0L
+) {
     val context = LocalContext.current
     val database = remember { RitsuDatabase.getDatabase(context) }
     var searchQuery by remember { mutableStateOf("") }
@@ -45,6 +49,14 @@ fun ScoreScreen() {
     val scores by database.scoreDao().getAllScores().collectAsState(initial = null)
     val configs by database.scoreDao().getAllConfigs().collectAsState(initial = null)
     val configMap = remember(configs) { configs?.associateBy { it.id } ?: emptyMap() }
+
+    val listState = rememberLazyListState()
+
+    LaunchedEffect(scrollToTopSignal) {
+        if (scrollToTopSignal > 0) {
+            listState.animateScrollToItem(0)
+        }
+    }
 
     val filteredScores = remember(searchQuery, scores, configMap) {
         scores?.filter { fullRecord ->
@@ -100,6 +112,7 @@ fun ScoreScreen() {
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth(),
+                state = listState,
                 contentPadding = PaddingValues(bottom = 16.dp)
             ) {
                 items(filteredScores) { fullRecord ->
