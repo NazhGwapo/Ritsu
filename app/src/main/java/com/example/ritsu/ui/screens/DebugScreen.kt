@@ -1,4 +1,4 @@
-package com.example.ritsu.ui
+package com.example.ritsu.ui.screens
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxSize
@@ -25,7 +25,7 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun DebugScreen() {
-    var showOcrDialog by remember { mutableStateOf(false) }
+    var showOcrDialog by remember { mutableStateOf(value = false) }
     var showCardEditor by remember { mutableStateOf(false) }
     var showManualEntryDialog by remember { mutableStateOf(false) }
     var showDatabaseViewer by remember { mutableStateOf(false) }
@@ -40,7 +40,7 @@ fun DebugScreen() {
         item {
             ListItem(
                 headlineContent = { Text("OCR test") },
-                modifier = Modifier.clickable { showOcrDialog = true }
+                modifier = Modifier.clickable { showOcrDialog = true },
             )
         }
         item {
@@ -76,7 +76,7 @@ fun DebugScreen() {
     }
 
     if (showOcrDialog) {
-        OcrTestDialog(onDismiss = { showOcrDialog = false })
+        OcrTestDialog { showOcrDialog = false }
     }
     
     if (showCardEditor) {

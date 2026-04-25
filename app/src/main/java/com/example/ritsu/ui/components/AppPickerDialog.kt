@@ -22,14 +22,16 @@ import coil3.compose.AsyncImage
 @Composable
 fun AppPickerDialog(
     onDismiss: () -> Unit,
-    onAppSelected: (ApplicationInfo) -> Unit
+    onAppSelected: (ApplicationInfo) -> Unit,
 ) {
     val context = LocalContext.current
     val packageManager = context.packageManager
     val apps = remember {
         packageManager.getInstalledApplications(PackageManager.GET_META_DATA)
+            .asSequence()
             .filter { packageManager.getLaunchIntentForPackage(it.packageName) != null }
             .sortedBy { it.loadLabel(packageManager).toString() }
+            .toList()
     }
 
     AlertDialog(

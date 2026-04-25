@@ -1,4 +1,4 @@
-package com.example.ritsu.ui
+package com.example.ritsu.ui.screens
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -26,7 +26,7 @@ fun DataScreen() {
 
     val ranges = listOf("Day", "Week", "Month", "Year")
     var selectedRange by remember { mutableStateOf(ranges[0]) }
-    var rangeExpanded by remember { mutableStateOf(false) }
+    var rangeExpanded by remember { mutableStateOf(value = false) }
 
     // Using Calendar for maximum compatibility and stability
     val options = remember(selectedRange) {
@@ -39,17 +39,19 @@ fun DataScreen() {
                 for (i in 0..365) { // Increased range to 1 year
                     val d = Calendar.getInstance()
                     d.add(Calendar.DAY_OF_YEAR, -i)
-                    list.add(when(i) {
-                        0 -> "Today"
-                        1 -> "Yesterday"
-                        else -> sdf.format(d.time)
-                    })
+                    list.add(
+                        when (i) {
+                            0 -> "Today"
+                            1 -> "Yesterday"
+                            else -> sdf.format(d.time)
+                        },
+                    )
                 }
             }
             "Week" -> {
                 for (i in 0..156) { // Increased range to 3 years
                     val d = Calendar.getInstance()
-                    d.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
+                    d[Calendar.DAY_OF_WEEK] = Calendar.MONDAY
                     d.add(Calendar.WEEK_OF_YEAR, -i)
                     val end = d.clone() as Calendar
                     end.add(Calendar.DAY_OF_YEAR, 6)
@@ -65,7 +67,7 @@ fun DataScreen() {
                 }
             }
             "Year" -> {
-                val year = calendar.get(Calendar.YEAR)
+                val year = calendar[Calendar.YEAR]
                 for (i in 0..20) { // Increased range to 20 years
                     list.add((year - i).toString())
                 }
@@ -75,18 +77,20 @@ fun DataScreen() {
     }
 
     var selectedOption by remember(selectedRange) { mutableStateOf(options.firstOrNull() ?: "") }
-    var optionExpanded by remember { mutableStateOf(false) }
+    var optionExpanded by remember { mutableStateOf(value = false) }
 
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             // Range Dropdown
             ExposedDropdownMenuBox(
                 expanded = rangeExpanded,
                 onExpandedChange = { rangeExpanded = !rangeExpanded },
-                modifier = Modifier.weight(0.4f)
+                modifier = Modifier.weight(0.4f),
             ) {
                 OutlinedTextField(
                     value = selectedRange,
@@ -94,11 +98,11 @@ fun DataScreen() {
                     readOnly = true,
                     label = { Text("Range") },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(rangeExpanded) },
-                    modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable, true)
+                    modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true),
                 )
                 ExposedDropdownMenu(
                     expanded = rangeExpanded,
-                    onDismissRequest = { rangeExpanded = false }
+                    onDismissRequest = { rangeExpanded = false },
                 ) {
                     ranges.forEach { range ->
                         DropdownMenuItem(
@@ -106,7 +110,7 @@ fun DataScreen() {
                             onClick = {
                                 selectedRange = range
                                 rangeExpanded = false
-                            }
+                            },
                         )
                     }
                 }
@@ -120,12 +124,12 @@ fun DataScreen() {
                     readOnly = true,
                     label = { Text("Selection") },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(optionExpanded) },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 )
                 Box(
                     modifier = Modifier
                         .matchParentSize()
-                        .clickable { optionExpanded = true }
+                        .clickable { optionExpanded = true },
                 )
             }
         }
@@ -138,7 +142,7 @@ fun DataScreen() {
                     Image(
                         painter = painterResource(id = R.drawable.ohnoes),
                         contentDescription = null,
-                        modifier = Modifier.size(128.dp)
+                        modifier = Modifier.size(128.dp),
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(text = "No data for $selectedOption")
@@ -149,27 +153,27 @@ fun DataScreen() {
 
     if (optionExpanded) {
         ModalBottomSheet(
-            onDismissRequest = { optionExpanded = false }
+            onDismissRequest = { optionExpanded = false },
         ) {
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .navigationBarsPadding()
+                    .navigationBarsPadding(),
             ) {
                 item {
                     Text(
                         text = "Select $selectedRange",
                         style = MaterialTheme.typography.titleLarge,
-                        modifier = Modifier.padding(16.dp)
+                        modifier = Modifier.padding(16.dp),
                     )
                 }
                 items(options) { option ->
                     ListItem(
                         headlineContent = { Text(option) },
                         modifier = Modifier.clickable {
-                            selectedOption = option
+                            // selectedOption = option
                             optionExpanded = false
-                        }
+                        },
                     )
                 }
             }

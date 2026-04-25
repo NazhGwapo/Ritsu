@@ -20,7 +20,6 @@ import coil3.compose.AsyncImage
 import com.example.ritsu.data.GameConfig
 import com.example.ritsu.data.GameConfigData
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.encodeToString
 
 @Composable
 fun ConfigDetailDialog(
@@ -28,16 +27,18 @@ fun ConfigDetailDialog(
     onDismiss: () -> Unit,
     onDelete: () -> Unit,
     onPickFromGallery: () -> Unit,
-    onPickFromApps: () -> Unit
+    onPickFromApps: () -> Unit,
 ) {
     val json = remember { Json { ignoreUnknownKeys = true; prettyPrint = true } }
     val configData = remember(config) {
         try {
             json.decodeFromString<GameConfigData>(config.configData)
-        } catch (e: Exception) { null }
+        } catch (_: Exception) {
+            null
+        }
     }
 
-    var showRaw by remember { mutableStateOf(false) }
+    var showRaw by remember { mutableStateOf(value = false) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -105,12 +106,14 @@ fun ConfigDetailDialog(
 
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-                if (showRaw || configData == null) {
+                if (showRaw || (configData == null)) {
                     val prettyJson = remember(config.configData) {
                         try {
                             val obj = json.decodeFromString<GameConfigData>(config.configData)
                             json.encodeToString(obj)
-                        } catch (e: Exception) { config.configData }
+                        } catch (_: Exception) {
+                            config.configData
+                        }
                     }
                     Text(
                         text = prettyJson,
@@ -123,26 +126,30 @@ fun ConfigDetailDialog(
                             supportingContent = {
                                 Column {
                                     Text("Category: $category | Key: ${field.key} | Type: ${field.type}")
-                                    if (field.type == "boolean" && field.targetColor != null) {
+                                    if ((field.type == "boolean") && (field.targetColor != null)) {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                             Text("Target Color: ")
                                             Box(
                                                 modifier = Modifier
                                                     .size(16.dp)
                                                     .clip(RoundedCornerShape(2.dp))
-                                                    .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(2.dp))
+                                                    .border(
+                                                        1.dp,
+                                                        MaterialTheme.colorScheme.outline,
+                                                        RoundedCornerShape(2.dp),
+                                                    )
                                                     .background(androidx.compose.ui.graphics.Color(field.targetColor))
                                             )
                                             Text(" | Threshold: ${"%.2f".format(field.threshold)}")
                                         }
                                     }
                                 }
-                            }
+                            },
                         )
                     }
-                    if (configData.formula != null) {
+                    configData.formula?.let {
                         Text(
-                            "Formula: ${configData.formula}",
+                            "Formula: $it",
                             modifier = Modifier.padding(top = 8.dp),
                             style = MaterialTheme.typography.bodyMedium
                         )

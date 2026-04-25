@@ -2,6 +2,7 @@ package com.example.ritsu.data
 
 import android.graphics.Bitmap
 import android.graphics.Rect
+import androidx.core.graphics.get
 import com.google.android.gms.tasks.Tasks
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.Text
@@ -38,7 +39,7 @@ class OCRManager {
         // Extract custom fields
         config.allFieldsWithCategory.forEach { (field, _) ->
             field.ocrRect?.let { rect ->
-                if (field.type == "boolean" && field.targetColor != null) {
+                if ((field.type == "boolean") && (field.targetColor != null)) {
                     extractedData[field.key] = detectColor(bitmap, rect, field.targetColor, field.threshold).toString()
                 } else {
                     extractedData[field.key] = extractTextFromRect(result, rect, width, height)
@@ -61,7 +62,6 @@ class OCRManager {
 
         if (left >= right || top >= bottom) return false
 
-        val targetA = (targetColor shr 24) and 0xFF
         val targetR = (targetColor shr 16) and 0xFF
         val targetG = (targetColor shr 8) and 0xFF
         val targetB = targetColor and 0xFF
@@ -71,16 +71,16 @@ class OCRManager {
 
         for (y in top until bottom) {
             for (x in left until right) {
-                val pixel = bitmap.getPixel(x, y)
+                val pixel = bitmap[x, y]
                 val r = (pixel shr 16) and 0xFF
                 val g = (pixel shr 8) and 0xFF
                 val b = pixel and 0xFF
-                
+
                 // Euclidean distance in RGB space (ignoring alpha for now as bitmaps are usually opaque)
                 val distance = kotlin.math.sqrt(
                     ((r - targetR) * (r - targetR) +
-                     (g - targetG) * (g - targetG) +
-                     (b - targetB) * (b - targetB)).toDouble()
+                            (g - targetG) * (g - targetG) +
+                            (b - targetB) * (b - targetB)).toDouble(),
                 ) / 441.67 // Max distance is sqrt(255^2 * 3) ≈ 441.67
 
                 if (distance < threshold) {
@@ -122,14 +122,14 @@ class OCRManager {
                     // Precision at symbol level if available
                     val symbols = element.symbols
                     if (symbols.isNotEmpty()) {
-                        val filteredText = symbols.filter { symbol ->
+                        val filteredText = symbols.asSequence().filter { symbol ->
                             val sBox = symbol.boundingBox ?: return@filter false
                             targetRect.contains(sBox.centerX(), sBox.centerY())
                         }.joinToString("") { it.text }
 
                         if (filteredText.isNotBlank()) {
                             // Find the horizontal position of the first symbol included
-                            val firstSymbolLeft = symbols.firstOrNull { symbol ->
+                            val firstSymbolLeft = symbols.asSequence().firstOrNull { symbol ->
                                 val sBox = symbol.boundingBox ?: return@firstOrNull false
                                 targetRect.contains(sBox.centerX(), sBox.centerY())
                             }?.boundingBox?.left ?: elementBox.left

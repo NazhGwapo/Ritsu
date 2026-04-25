@@ -1,4 +1,4 @@
-package com.example.ritsu.ui
+package com.example.ritsu.ui.screens
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -26,26 +26,24 @@ fun OptionsScreen(onManageConfigsClick: () -> Unit, onDebugClick: () -> Unit) {
     val context = LocalContext.current
     val database = remember { RitsuDatabase.getDatabase(context) }
     val configs by database.scoreDao().getAllConfigs().collectAsState(initial = emptyList())
-    var showExportDialog by remember { mutableStateOf(false) }
+    var showExportDialog by remember { mutableStateOf(value = false) }
     var selectedConfigToExport by remember { mutableStateOf<GameConfig?>(null) }
 
     val importLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument(),
-        onResult = { uri ->
-            ConfigManager.handleImport(context, uri)
-        }
-    )
+    ) { uri ->
+        ConfigManager.handleImport(context, uri)
+    }
 
     val exportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json"),
-        onResult = { uri ->
-            uri?.let {
-                selectedConfigToExport?.let { config ->
-                    ConfigManager.handleExport(context, it, config.configData)
-                }
+    ) { uri ->
+        uri?.let {
+            selectedConfigToExport?.let { config ->
+                ConfigManager.handleExport(context, it, config.configData)
             }
         }
-    )
+    }
 
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         item {
@@ -117,9 +115,9 @@ fun OptionsScreen(onManageConfigsClick: () -> Unit, onDebugClick: () -> Unit) {
                             supportingContent = { Text("Version: ${config.configVersion}") },
                             modifier = Modifier.clickable {
                                 selectedConfigToExport = config
-                                showExportDialog = false
                                 exportLauncher.launch("${config.gameName.replace(" ", "_")}.json")
-                            }
+                                showExportDialog = false
+                            },
                         )
                     }
                 }
@@ -128,7 +126,7 @@ fun OptionsScreen(onManageConfigsClick: () -> Unit, onDebugClick: () -> Unit) {
                 TextButton(onClick = { showExportDialog = false }) {
                     Text("Cancel")
                 }
-            }
+            },
         )
     }
 }

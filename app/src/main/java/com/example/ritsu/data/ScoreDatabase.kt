@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.Flow
 
 @Entity(
     tableName = "game_configs",
-    indices = [Index(value = ["gameName"], unique = true)]
+    indices = [Index(value = ["gameName"], unique = true)],
 )
 data class GameConfig(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -45,7 +45,7 @@ data class GenericScore(
 ) {
     companion object {
         fun parseDifficulty(diffStr: String): Double {
-            val numericPart = diffStr.filter { it.isDigit() || it == '.' }.toDoubleOrNull() ?: 0.0
+            val numericPart = diffStr.filter { (it.isDigit() || it == '.') }.toDoubleOrNull() ?: 0.0
             var bonus = 0.0
             if (diffStr.contains('+')) bonus += 0.5
             return numericPart + bonus

@@ -1,4 +1,4 @@
-package com.example.ritsu.ui
+package com.example.ritsu.ui.screens
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
@@ -31,7 +31,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.LaunchedEffect
 import com.example.ritsu.R
-import com.example.ritsu.data.GenericScore
 import com.example.ritsu.ui.cards.ScoreCard
 
 import androidx.compose.runtime.collectAsState
@@ -40,7 +39,7 @@ import com.example.ritsu.data.RitsuDatabase
 
 @Composable
 fun ScoreScreen(
-    scrollToTopSignal: Long = 0L
+    scrollToTopSignal: Long = 0L,
 ) {
     val context = LocalContext.current
     val database = remember { RitsuDatabase.getDatabase(context) }
@@ -124,8 +123,7 @@ fun ScoreScreen(
                         gameName = gameName,
                         displayIconUri = config?.displayIconUri,
                         onClick = { /* TODO: Show details */ },
-                        onMoreClick = { /* TODO: Options */ }
-                    )
+                    ) { /* TODO: Options */ }
                 }
             }
         }

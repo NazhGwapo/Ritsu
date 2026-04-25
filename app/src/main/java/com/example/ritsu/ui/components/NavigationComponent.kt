@@ -1,4 +1,4 @@
-package com.example.ritsu.ui
+package com.example.ritsu.ui.components
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
@@ -31,9 +31,9 @@ import com.example.ritsu.Screen
 @Composable
 fun NavigationComponent(
     currentScreen: Screen,
-    onScreenSelected: (Screen) -> Unit
+    onScreenSelected: (Screen) -> Unit,
 ) {
-    var showMenu by remember { mutableStateOf(false) }
+    var showMenu by remember { mutableStateOf(value = false) }
 
     NavigationBar {
         NavigationBarItem(

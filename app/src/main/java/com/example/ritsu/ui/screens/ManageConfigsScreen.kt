@@ -42,10 +42,10 @@ fun ManageConfigsScreen(onEditConfig: () -> Unit) {
     val selectedConfig = remember(selectedConfigId, configs) {
         configs.find { it.id == selectedConfigId }
     }
-    var showAppPicker by remember { mutableStateOf(false) }
+    var showAppPicker by remember { mutableStateOf(value = false) }
 
     val galleryLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
+        contract = ActivityResultContracts.GetContent(),
     ) { uri: Uri? ->
         uri?.let {
             scope.launch {
@@ -71,7 +71,9 @@ fun ManageConfigsScreen(onEditConfig: () -> Unit) {
                     val configData = remember(config.configData) {
                         try {
                             json.decodeFromString<GameConfigData>(config.configData)
-                        } catch (e: Exception) { null }
+                        } catch (_: Exception) {
+                            null
+                        }
                     }
 
                     ListItem(
@@ -137,7 +139,7 @@ fun ManageConfigsScreen(onEditConfig: () -> Unit) {
                 }
             },
             onPickFromGallery = { galleryLauncher.launch("image/*") },
-            onPickFromApps = { showAppPicker = true }
+            onPickFromApps = { showAppPicker = true },
         )
     }
 
@@ -150,13 +152,13 @@ fun ManageConfigsScreen(onEditConfig: () -> Unit) {
                         val icon = appInfo.loadIcon(context.packageManager)
                         val file = saveDrawableToFile(context, icon, "config_${config.id}.png")
                         val updated = config.copy(
-                            displayIconUri = file.toURI().toString() + "?t=${System.currentTimeMillis()}"
+                            displayIconUri = file.toURI().toString() + "?t=${System.currentTimeMillis()}",
                         )
                         database.scoreDao().updateConfig(updated)
                     }
                 }
                 showAppPicker = false
-            }
+            },
         )
     }
 }

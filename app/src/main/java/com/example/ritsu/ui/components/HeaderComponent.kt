@@ -1,4 +1,4 @@
-package com.example.ritsu.ui
+package com.example.ritsu.ui.components
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -15,7 +15,7 @@ import com.example.ritsu.Screen
 @Composable
 fun HeaderComponent(
     currentScreen: Screen,
-    onActionClick: () -> Unit = {}
+    onActionClick: () -> Unit = {},
 ) {
     TopAppBar(
         title = {

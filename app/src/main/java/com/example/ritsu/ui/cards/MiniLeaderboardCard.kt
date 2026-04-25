@@ -1,4 +1,4 @@
-package com.example.ritsu.ui.components
+package com.example.ritsu.ui.cards
 
 import androidx.compose.runtime.Composable
 
