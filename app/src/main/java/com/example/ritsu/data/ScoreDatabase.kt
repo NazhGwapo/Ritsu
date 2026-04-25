@@ -130,14 +130,14 @@ interface ScoreDao {
     suspend fun deleteAllConfigs()
 
     @Transaction
-    @Query("SELECT * FROM generic_scores WHERE songTitle = :songTitle AND difficultyName = :difficultyName ORDER BY totalScore DESC")
-    fun getScoresForChart(songTitle: String, difficultyName: String): Flow<List<FullScoreRecord>>
+    @Query("SELECT * FROM generic_scores WHERE configId = :configId AND songTitle = :songTitle AND difficultyName = :difficultyName AND difficultyVal = :difficultyVal ORDER BY totalScore DESC")
+    fun getScoresForChart(configId: Long, songTitle: String, difficultyName: String, difficultyVal: String): Flow<List<FullScoreRecord>>
 
-    @Query("SELECT COUNT(*) FROM generic_scores WHERE songTitle = :songTitle")
-    fun getTrackCountForSong(songTitle: String): Flow<Int>
+    @Query("SELECT COUNT(*) FROM generic_scores WHERE configId = :configId AND songTitle = :songTitle")
+    fun getTrackCountForSong(configId: Long, songTitle: String): Flow<Int>
 
-    @Query("SELECT COUNT(*) FROM generic_scores WHERE songTitle = :songTitle AND difficultyName = :difficultyName")
-    fun getTrackCountForChart(songTitle: String, difficultyName: String): Flow<Int>
+    @Query("SELECT COUNT(*) FROM generic_scores WHERE configId = :configId AND songTitle = :songTitle AND difficultyName = :difficultyName AND difficultyVal = :difficultyVal")
+    fun getTrackCountForChart(configId: Long, songTitle: String, difficultyName: String, difficultyVal: String): Flow<Int>
 }
 
 // --- 4. THE DATABASE ---

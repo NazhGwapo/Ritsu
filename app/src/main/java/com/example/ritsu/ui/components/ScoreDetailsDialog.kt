@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.ritsu.data.FullScoreRecord
@@ -33,6 +34,10 @@ import java.util.*
 import kotlinx.serialization.json.Json
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+
+enum class LeaderboardSortMode {
+    SCORE, ACCURACY, MAX_COMBO
+}
 
 @Composable
 fun ScoreDetailsDialog(
@@ -90,12 +95,26 @@ fun ScoreDetailsDialogContent(
         configData?.allFieldsWithCategory?.associate { it.first.key to it.first.label } ?: emptyMap()
     }
 
-    val chartScores by scoreDao.getScoresForChart(score.songTitle, score.difficultyName)
+    val fieldMap = remember(configData) {
+        configData?.allFieldsWithCategory?.associate { it.first.key to it.first } ?: emptyMap()
+    }
+
+    val chartScores by scoreDao.getScoresForChart(score.configId, score.songTitle, score.difficultyName, score.difficultyVal)
         .collectAsState(initial = emptyList())
-    val songTrackCount by scoreDao.getTrackCountForSong(score.songTitle)
+    val songTrackCount by scoreDao.getTrackCountForSong(score.configId, score.songTitle)
         .collectAsState(initial = 0)
-    val chartTrackCount by scoreDao.getTrackCountForChart(score.songTitle, score.difficultyName)
+    val chartTrackCount by scoreDao.getTrackCountForChart(score.configId, score.songTitle, score.difficultyName, score.difficultyVal)
         .collectAsState(initial = 0)
+
+    var sortMode by remember { mutableStateOf(LeaderboardSortMode.SCORE) }
+
+    val sortedScores = remember(chartScores, sortMode) {
+        when (sortMode) {
+            LeaderboardSortMode.SCORE -> chartScores.sortedByDescending { it.genericScore.totalScore }
+            LeaderboardSortMode.ACCURACY -> chartScores.sortedByDescending { it.genericScore.accuracy }
+            LeaderboardSortMode.MAX_COMBO -> chartScores.sortedByDescending { it.genericScore.maxCombo }
+        }
+    }
 
     Surface(
         modifier = Modifier
@@ -169,17 +188,31 @@ fun ScoreDetailsDialogContent(
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                                 catDetails.forEach { detail ->
-                                    val displayLabel = labelMap[detail.key] ?: detail.key
-                                    val displayValue = if (catKey == "Judgment" && detail.value.toIntOrNull() != null) {
-                                        "${detail.value}x"
+                                    val field = fieldMap[detail.key]
+                                    val isBoolean = field?.type == "boolean"
+                                    val isTrue = detail.value.lowercase() == "true"
+
+                                    if (isBoolean) {
+                                        if (isTrue) {
+                                            Text(
+                                                text = field?.label ?: detail.key,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                            )
+                                        }
                                     } else {
-                                        detail.value
+                                        val displayLabel = field?.label ?: detail.key
+                                        val displayValue = if (catKey == "Judgment" && detail.value.toIntOrNull() != null) {
+                                            "${detail.value}x"
+                                        } else {
+                                            detail.value
+                                        }
+                                        Text(
+                                            text = "$displayLabel - $displayValue",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                        )
                                     }
-                                    Text(
-                                        text = "$displayLabel - $displayValue",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                                    )
                                 }
                             }
                         }
@@ -206,23 +239,57 @@ fun ScoreDetailsDialogContent(
                 }
 
                 // Mini Leaderboard
-                if (chartScores.isNotEmpty()) {
+                if (sortedScores.isNotEmpty()) {
                     item {
-                        Text(
-                            text = "Top Scores",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        )
-                    }
-                    itemsIndexed(chartScores) { index, record ->
-                        MiniLeaderboardCard(
-                            rank = index + 1,
-                            score = record.genericScore,
-                            isHighlighted = record.genericScore.id == score.id,
-                            modifier = Modifier.padding(vertical = 4.dp),
-                            onClick = { onScoreSelected(record) }
-                        )
+                        Column {
+                            Text(
+                                text = "Top Scores",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                            )
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                LeaderboardSortMode.entries.forEach { mode ->
+                                    FilterChip(
+                                        selected = sortMode == mode,
+                                        onClick = { sortMode = mode },
+                                        label = {
+                                            Text(
+                                                text = when (mode) {
+                                                    LeaderboardSortMode.SCORE -> "Score"
+                                                    LeaderboardSortMode.ACCURACY -> "Accuracy"
+                                                    LeaderboardSortMode.MAX_COMBO -> "Combo"
+                                                },
+                                                fontSize = 12.sp
+                                            )
+                                        }
+                                    )
+                                }
+                            }
+                            
+                            // Nested column for tighter spacing between leaderboard entries
+                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                sortedScores.forEachIndexed { index, record ->
+                                    val s = record.genericScore
+                                    val displayValue = when (sortMode) {
+                                        LeaderboardSortMode.SCORE -> "${s.playRank} - ${"%,d".format(s.totalScore)}"
+                                        LeaderboardSortMode.ACCURACY -> "${s.playRank} - ${"%.2f".format(s.accuracy)}%"
+                                        LeaderboardSortMode.MAX_COMBO -> "${s.playRank} - ${s.maxCombo}x"
+                                    }
+                                    MiniLeaderboardCard(
+                                        rank = index + 1,
+                                        score = s,
+                                        isHighlighted = s.id == score.id,
+                                        displayValue = displayValue,
+                                        onClick = { onScoreSelected(record) }
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -270,14 +337,21 @@ fun ScoreDetailsDialogPreview() {
         ScoreDetail(scoreId = 1, key = "100", value = "21", category = "Judgment"),
         ScoreDetail(scoreId = 1, key = "50", value = "1", category = "Judgment"),
         ScoreDetail(scoreId = 1, key = "Miss", value = "2", category = "Judgment"),
-        ScoreDetail(scoreId = 1, key = "PP", value = "126.32", category = "Metric")
+        ScoreDetail(scoreId = 1, key = "PP", value = "126.32", category = "Metric"),
+        ScoreDetail(scoreId = 1, key = "FC", value = "true", category = "Misc"),
+        ScoreDetail(scoreId = 1, key = "AP", value = "false", category = "Misc")
     )
     val dummyRecord = FullScoreRecord(dummyScore, dummyDetails)
 
     val dummyConfig = GameConfig(
         id = 1,
         gameName = "Game",
-        configData = "{\"judgments\":[{\"key\":\"300\",\"label\":\"Perfect\"},{\"key\":\"100\",\"label\":\"Great\"},{\"key\":\"50\",\"label\":\"Good\"},{\"key\":\"Miss\",\"label\":\"Miss\"}],\"metrics\":[{\"key\":\"PP\",\"label\":\"Performance Points\"}]}"
+        configData = "{\"gameName\":\"Game\",\"judgments\":[{\"key\":\"300\",\"label\":\"Perfect\"},{\"key\":\"100\",\"label\":\"Great\"},{\"key\":\"50\",\"label\":\"Good\"},{\"key\":\"Miss\",\"label\":\"Miss\"}],\"metrics\":[{\"key\":\"PP\",\"label\":\"Performance Points\"}],\"misc\":[{\"key\":\"FC\",\"label\":\"Full Combo\",\"type\":\"boolean\"},{\"key\":\"AP\",\"label\":\"All Perfect\",\"type\":\"boolean\"}]}"
+    )
+
+    val dummyRecord2 = FullScoreRecord(
+        dummyScore.copy(id = 2, totalScore = 900000, accuracy = 99.0, playRank = "SSS", maxCombo = 1200),
+        emptyList()
     )
 
     RitsuTheme {
@@ -296,9 +370,9 @@ fun ScoreDetailsDialogPreview() {
                 override suspend fun deleteConfig(config: com.example.ritsu.data.GameConfig) {}
                 override suspend fun deleteAllScores() {}
                 override suspend fun deleteAllConfigs() {}
-                override fun getScoresForChart(songTitle: String, difficultyName: String): kotlinx.coroutines.flow.Flow<List<FullScoreRecord>> = flowOf(listOf(dummyRecord))
-                override fun getTrackCountForSong(songTitle: String): kotlinx.coroutines.flow.Flow<Int> = flowOf(8)
-                override fun getTrackCountForChart(songTitle: String, difficultyName: String): kotlinx.coroutines.flow.Flow<Int> = flowOf(3)
+                override fun getScoresForChart(configId: Long, songTitle: String, difficultyName: String, difficultyVal: String): kotlinx.coroutines.flow.Flow<List<FullScoreRecord>> = flowOf(listOf(dummyRecord, dummyRecord2))
+                override fun getTrackCountForSong(configId: Long, songTitle: String): kotlinx.coroutines.flow.Flow<Int> = flowOf(8)
+                override fun getTrackCountForChart(configId: Long, songTitle: String, difficultyName: String, difficultyVal: String): kotlinx.coroutines.flow.Flow<Int> = flowOf(3)
             },
             onDismiss = {}
         )

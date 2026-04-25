@@ -31,6 +31,7 @@ fun MiniLeaderboardCard(
     score: GenericScore,
     modifier: Modifier = Modifier,
     isHighlighted: Boolean = false,
+    displayValue: String? = null,
     onClick: () -> Unit = {}
 ) {
     val backgroundColor = if (isHighlighted) {
@@ -66,7 +67,7 @@ fun MiniLeaderboardCard(
         Spacer(modifier = Modifier.width(8.dp))
 
         Text(
-            text = "${score.playRank} - ${"%,d".format(score.totalScore)}",
+            text = displayValue ?: "${score.playRank} - ${"%,d".format(score.totalScore)}",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.weight(1f)
@@ -129,6 +130,23 @@ fun MiniLeaderboardCardPreview() {
                     timestamp = System.currentTimeMillis() - 1000 * 60 * 10L
                 ),
                 isHighlighted = true
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            MiniLeaderboardCard(
+                rank = 3,
+                score = GenericScore(
+                    configId = 1,
+                    songTitle = "Test Song",
+                    difficultyName = "Expert",
+                    difficultyVal = "10",
+                    difficultySortValue = 10.0,
+                    totalScore = 654321,
+                    maxCombo = 300,
+                    accuracy = 92.1,
+                    playRank = "B",
+                    timestamp = System.currentTimeMillis() - 1000 * 60 * 60L
+                ),
+                displayValue = "B - 92.10%"
             )
         }
     }
