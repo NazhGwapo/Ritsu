@@ -15,11 +15,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -32,12 +28,17 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.LaunchedEffect
 import com.example.ritsu.R
 import com.example.ritsu.ui.cards.ScoreCard
+import com.example.ritsu.data.ScoreDetail
+import com.example.ritsu.ui.screens.debug.ManualEntryDialog
 import com.example.ritsu.ui.components.ScoreDetailsDialog
+import kotlinx.coroutines.launch
 
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.platform.LocalContext
 import com.example.ritsu.data.FullScoreRecord
 import com.example.ritsu.data.RitsuDatabase
+import com.example.ritsu.data.GameConfigData
+import kotlinx.serialization.json.Json
 
 @Composable
 fun ScoreScreen(
@@ -45,13 +46,16 @@ fun ScoreScreen(
 ) {
     val context = LocalContext.current
     val database = remember { RitsuDatabase.getDatabase(context) }
+    val scope = rememberCoroutineScope()
     var searchQuery by remember { mutableStateOf("") }
 
     var selectedScore by remember { mutableStateOf<FullScoreRecord?>(null) }
+    var scoreToEdit by remember { mutableStateOf<FullScoreRecord?>(null) }
 
     val scores by database.scoreDao().getAllScores().collectAsState(initial = null)
     val configs by database.scoreDao().getAllConfigs().collectAsState(initial = null)
     val configMap = remember(configs) { configs?.associateBy { it.id } ?: emptyMap() }
+    val json = remember { Json { ignoreUnknownKeys = true } }
 
     val listState = rememberLazyListState()
 
@@ -122,12 +126,49 @@ fun ScoreScreen(
                     val score = fullRecord.genericScore
                     val config = configMap[score.configId]
                     val gameName = config?.gameName ?: "Unknown Game"
+                    
+                    val useRank = remember(config) {
+                        if (config == null) true else {
+                            try {
+                                json.decodeFromString<GameConfigData>(config.configData).useRankOcr
+                            } catch (_: Exception) {
+                                true
+                            }
+                        }
+                    }
+
+                    val booleanLabels = remember(fullRecord, config) {
+                        if (config == null) emptyList<String>() else {
+                            try {
+                                val configData = json.decodeFromString<GameConfigData>(config.configData)
+                                val booleanFields = configData.allFieldsWithCategory
+                                    .filter { it.first.type == "boolean" }
+                                    .map { it.first.key to it.first.label }
+                                    .toMap()
+                                
+                                fullRecord.details
+                                    .filter { booleanFields.containsKey(it.key) && it.value.lowercase() == "true" }
+                                    .map { booleanFields[it.key] ?: "" }
+                            } catch (_: Exception) {
+                                emptyList<String>()
+                            }
+                        }
+                    }
+
                     ScoreCard(
                         score = score,
                         gameName = gameName,
                         displayIconUri = config?.displayIconUri,
+                        useRank = useRank,
+                        booleanLabels = booleanLabels,
                         onClick = { selectedScore = fullRecord },
-                    ) { /* TODO: Options */ }
+                        onEdit = { scoreToEdit = fullRecord },
+                        onDelete = {
+                            scope.launch {
+                                database.scoreDao().deleteScoreById(score.id)
+                            }
+                        }
+                    )
                 }
             }
         }
@@ -140,8 +181,19 @@ fun ScoreScreen(
                 scoreRecord = record,
                 gameConfig = config,
                 scoreDao = database.scoreDao(),
-                onDismiss = { selectedScore = null }
+                onDismiss = { selectedScore = null },
+                onEdit = {
+                    selectedScore = null
+                    scoreToEdit = record
+                }
             )
         }
+    }
+
+    if (scoreToEdit != null) {
+        ManualEntryDialog(
+            initialRecord = scoreToEdit,
+            onDismiss = { scoreToEdit = null }
+        )
     }
 }

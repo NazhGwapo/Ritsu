@@ -2,6 +2,7 @@ package com.example.ritsu.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -28,6 +29,7 @@ fun ConfigDetailDialog(
     onDelete: () -> Unit,
     onPickFromGallery: () -> Unit,
     onPickFromApps: () -> Unit,
+    onUpdateConfig: (GameConfig) -> Unit = {}
 ) {
     val json = remember { Json { ignoreUnknownKeys = true; prettyPrint = true } }
     val configData = remember(config) {
@@ -120,6 +122,32 @@ fun ConfigDetailDialog(
                         style = MaterialTheme.typography.bodySmall
                     )
                 } else {
+                    // System Settings
+                    Text("System Settings", style = MaterialTheme.typography.titleSmall)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                val newData = configData.copy(useRankOcr = !configData.useRankOcr)
+                                onUpdateConfig(config.copy(configData = json.encodeToString(newData)))
+                            }
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = configData.useRankOcr,
+                            onCheckedChange = {
+                                val newData = configData.copy(useRankOcr = it)
+                                onUpdateConfig(config.copy(configData = json.encodeToString(newData)))
+                            }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Use Rank OCR", style = MaterialTheme.typography.bodyMedium)
+                    }
+
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                    Text("Custom Fields", style = MaterialTheme.typography.titleSmall)
+
                     configData.allFieldsWithCategory.forEach { (field, category) ->
                         ListItem(
                             headlineContent = { Text(field.label) },

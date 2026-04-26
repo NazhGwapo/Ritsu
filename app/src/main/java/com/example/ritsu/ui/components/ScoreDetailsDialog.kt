@@ -156,13 +156,16 @@ fun ScoreDetailsDialogContent(
                 item {
                     Column {
                         Text(
-                            text = "${gameConfig.gameName} - [${score.difficultyName}] *${score.difficultyVal}",
+                            text = "${gameConfig.gameName} - [${score.difficultyName}] ${score.difficultyVal}",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
                         )
                         val ppValue = details.find { it.key.contains("PP", ignoreCase = true) }?.value
                         val performanceText = buildString {
-                            append("${score.playRank} ${"%.2f".format(score.accuracy)}%")
+                            if (configData?.useRankOcr != false && score.playRank.isNotBlank()) {
+                                append("${score.playRank} ")
+                            }
+                            append("${"%.2f".format(score.accuracy)}%")
                             if (ppValue != null) append(" - ${ppValue}PP")
                             append(" - ${"%,d".format(score.totalScore)}")
                         }
@@ -224,7 +227,13 @@ fun ScoreDetailsDialogContent(
                     Column {
                         val sdf = remember { SimpleDateFormat("MM/dd/yyyy, h:mm a", Locale.getDefault()) }
                         Text(
-                            text = "Tracked on ${sdf.format(Date(score.timestamp))}",
+                            text = "Played on ${sdf.format(Date(score.playTimestamp))}",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontStyle = FontStyle.Italic,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        )
+                        Text(
+                            text = "Imported on ${sdf.format(Date(score.importTimestamp))}",
                             style = MaterialTheme.typography.bodySmall,
                             fontStyle = FontStyle.Italic,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
@@ -271,14 +280,23 @@ fun ScoreDetailsDialogContent(
                                 }
                             }
                             
-                            // Nested column for tighter spacing between leaderboard entries
-                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                 sortedScores.forEachIndexed { index, record ->
                                     val s = record.genericScore
+                                    val hasRank = configData?.useRankOcr != false && s.playRank.isNotBlank()
                                     val displayValue = when (sortMode) {
-                                        LeaderboardSortMode.SCORE -> "${s.playRank} - ${"%,d".format(s.totalScore)}"
-                                        LeaderboardSortMode.ACCURACY -> "${s.playRank} - ${"%.2f".format(s.accuracy)}%"
-                                        LeaderboardSortMode.MAX_COMBO -> "${s.playRank} - ${s.maxCombo}x"
+                                        LeaderboardSortMode.SCORE -> {
+                                            if (hasRank) "${s.playRank} - ${"%,d".format(s.totalScore)}"
+                                            else "%,d".format(s.totalScore)
+                                        }
+                                        LeaderboardSortMode.ACCURACY -> {
+                                            if (hasRank) "${s.playRank} - ${"%.2f".format(s.accuracy)}%"
+                                            else "${"%.2f".format(s.accuracy)}%"
+                                        }
+                                        LeaderboardSortMode.MAX_COMBO -> {
+                                            if (hasRank) "${s.playRank} - ${s.maxCombo}x"
+                                            else "${s.maxCombo}x"
+                                        }
                                     }
                                     MiniLeaderboardCard(
                                         rank = index + 1,
@@ -330,7 +348,8 @@ fun ScoreDetailsDialogPreview() {
         maxCombo = 1000,
         accuracy = 96.32,
         playRank = "A",
-        timestamp = System.currentTimeMillis()
+        playTimestamp = System.currentTimeMillis(),
+        importTimestamp = System.currentTimeMillis()
     )
     val dummyDetails = listOf(
         ScoreDetail(scoreId = 1, key = "300", value = "521", category = "Judgment"),
@@ -361,6 +380,9 @@ fun ScoreDetailsDialogPreview() {
             scoreDao = object : ScoreDao {
                 override suspend fun insertConfig(config: com.example.ritsu.data.GameConfig): Long = 0
                 override suspend fun updateConfig(config: com.example.ritsu.data.GameConfig) {}
+                override suspend fun updateScore(score: GenericScore) {}
+                override suspend fun deleteDetailsForScore(scoreId: Long) {}
+                override suspend fun deleteScoreById(id: Long) {}
                 override suspend fun getConfigByName(name: String): com.example.ritsu.data.GameConfig? = null
                 override suspend fun upsertConfig(newConfig: com.example.ritsu.data.GameConfig) {}
                 override suspend fun insertScore(score: GenericScore): Long = 0

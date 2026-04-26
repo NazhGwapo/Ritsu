@@ -17,7 +17,8 @@ data class ConfigField(
     val type: String = "number", // "number", "text", "boolean"
     val ocrRect: OcrRect? = null,
     val targetColor: Int? = null, // ARGB color to detect if type is "boolean"
-    val threshold: Float = 0.1f    // Threshold for color matching (0.0 - 1.0)
+    val threshold: Float = 0.1f,    // Threshold for color matching (0.0 - 1.0)
+    val weight: Double? = null      // Weight for accuracy calculation (e.g., 1.0 for Perfect)
 )
 
 @Serializable
@@ -32,9 +33,11 @@ data class GameConfigData(
     val titleRect: OcrRect? = null,
     val scoreRect: OcrRect? = null,
     val comboRect: OcrRect? = null,
+    val accuracyRect: OcrRect? = null,
     val difficultyNameRect: OcrRect? = null,
     val difficultyValRect: OcrRect? = null,
-    val rankRect: OcrRect? = null
+    val rankRect: OcrRect? = null,
+    val useRankOcr: Boolean = true
 ) {
     val allFieldsWithCategory: List<Pair<ConfigField, String>>
         get() = judgments.map { it to "Judgment" } +
@@ -134,9 +137,11 @@ data class GameConfigData(
             key == "titleRect" -> copy(titleRect = rect)
             key == "scoreRect" -> copy(scoreRect = rect)
             key == "comboRect" -> copy(comboRect = rect)
+            key == "accuracyRect" -> copy(accuracyRect = rect)
             key == "difficultyNameRect" -> copy(difficultyNameRect = rect)
             key == "difficultyValRect" -> copy(difficultyValRect = rect)
             key == "rankRect" -> copy(rankRect = rect)
+            key == "useRankOcr" -> copy(useRankOcr = rect != null) // Simplistic mapping for toggle
             key.startsWith("judgment_") -> {
                 val index = key.substringAfter("judgment_").toIntOrNull()
                 if (index != null && index in judgments.indices) {

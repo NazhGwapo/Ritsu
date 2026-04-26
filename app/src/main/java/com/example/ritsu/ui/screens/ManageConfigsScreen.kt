@@ -159,6 +159,11 @@ fun ManageConfigsScreen(onEditConfig: () -> Unit) {
             },
             onPickFromGallery = { galleryLauncher.launch("image/*") },
             onPickFromApps = { showAppPicker = true },
+            onUpdateConfig = { updated ->
+                scope.launch {
+                    database.scoreDao().updateConfig(updated)
+                }
+            }
         )
     }
 

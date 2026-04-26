@@ -96,7 +96,8 @@ fun ScoreCardEditorDialog(onDismiss: () -> Unit) {
                         maxCombo = 0,
                         accuracy = accuracy.toDoubleOrNull() ?: 0.0,
                         playRank = playRank,
-                        timestamp = System.currentTimeMillis()
+                        playTimestamp = System.currentTimeMillis(),
+                        importTimestamp = System.currentTimeMillis()
                     ),
                     gameName = gameName,
                     imageBitmap = selectedBitmap

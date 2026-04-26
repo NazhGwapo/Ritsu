@@ -66,6 +66,18 @@ class EditorViewModel : ViewModel() {
         _selectedKey.value = null
     }
 
+    fun autoSetWeights() {
+        val currentData = _configData.value ?: return
+        val judgments = currentData.judgments
+        if (judgments.size < 2) return
+
+        val updatedJudgments = judgments.mapIndexed { index, field ->
+            val weight = 1.0 - (index.toDouble() / (judgments.size - 1))
+            field.copy(weight = (weight * 100).toInt() / 100.0) // Round to 2 decimal places
+        }
+        _configData.value = currentData.copy(judgments = updatedJudgments)
+    }
+
     // Helper to convert screen coordinates to normalized coordinates (0.0 - 1.0)
     fun screenToNormalized(screenOffset: Offset): Offset {
         if ((imageSize.width == 0f) || (imageSize.height == 0f)) return Offset.Zero

@@ -30,11 +30,16 @@ class OCRManager {
 
         // Extract generic fields if they have rects defined
         config.titleRect?.let { extractedData["songTitle"] = extractTextFromRect(result, it, width, height) }
-        config.scoreRect?.let { extractedData["totalScore"] = extractTextFromRect(result, it, width, height) }
-        config.comboRect?.let { extractedData["maxCombo"] = extractTextFromRect(result, it, width, height) }
+        config.scoreRect?.let { extractedData["totalScore"] = extractTextFromRect(result, it, width, height, isNumeric = true) }
+        config.comboRect?.let { extractedData["maxCombo"] = extractTextFromRect(result, it, width, height, isNumeric = true) }
+        config.accuracyRect?.let { extractedData["accuracy"] = extractTextFromRect(result, it, width, height, isNumeric = true) }
         config.difficultyNameRect?.let { extractedData["difficultyName"] = extractTextFromRect(result, it, width, height) }
         config.difficultyValRect?.let { extractedData["difficultyVal"] = extractTextFromRect(result, it, width, height) }
-        config.rankRect?.let { extractedData["playRank"] = extractTextFromRect(result, it, width, height) }
+        config.rankRect?.let { 
+            if (config.useRankOcr) {
+                extractedData["playRank"] = extractTextFromRect(result, it, width, height)
+            }
+        }
 
         // Extract custom fields
         config.allFieldsWithCategory.forEach { (field, _) ->
@@ -42,7 +47,7 @@ class OCRManager {
                 if ((field.type == "boolean") && (field.targetColor != null)) {
                     extractedData[field.key] = detectColor(bitmap, rect, field.targetColor, field.threshold).toString()
                 } else {
-                    extractedData[field.key] = extractTextFromRect(result, rect, width, height)
+                    extractedData[field.key] = extractTextFromRect(result, rect, width, height, isNumeric = field.type == "number")
                 }
             }
         }
@@ -104,7 +109,7 @@ class OCRManager {
         }
     }
 
-    private fun extractTextFromRect(text: Text, ocrRect: OcrRect, imgW: Int, imgH: Int): String {
+    private fun extractTextFromRect(text: Text, ocrRect: OcrRect, imgW: Int, imgH: Int, isNumeric: Boolean = false): String {
         val left = (ocrRect.x * imgW).toInt()
         val top = (ocrRect.y * imgH).toInt()
         val right = ((ocrRect.x + ocrRect.w) * imgW).toInt()
@@ -147,8 +152,22 @@ class OCRManager {
         }
 
         // Sort by vertical then horizontal position to maintain reading order
-        return items.sortedWith(compareBy({ it.second }, { it.third }))
+        var resultText = items.sortedWith(compareBy({ it.second }, { it.third }))
             .joinToString(" ") { it.first }
             .trim()
+
+        if (isNumeric) {
+            // Replace 'O' or 'o' with '0' as OCR often confuses them
+            resultText = resultText.replace('O', '0').replace('o', '0')
+            // Filter only digits, dots, or signs if needed, but here we focus on simple cleanup
+            val digitsOnly = resultText.filter { it.isDigit() || it == '.' }
+            if (digitsOnly.isNotEmpty()) {
+                // Remove leading zeros, but keep at least one digit if it's all zeros
+                val trimmed = digitsOnly.trimStart('0')
+                resultText = if (trimmed.isEmpty()) "0" else if (trimmed.startsWith(".")) "0$trimmed" else trimmed
+            }
+        }
+
+        return resultText
     }
 }

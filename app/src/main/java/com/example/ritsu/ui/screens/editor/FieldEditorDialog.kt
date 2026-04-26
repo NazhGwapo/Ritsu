@@ -48,6 +48,7 @@ fun FieldEditorDialog(
     var type by remember { mutableStateOf(field.type) }
     var threshold by remember { mutableStateOf(field.threshold) }
     var targetColor by remember { mutableStateOf(field.targetColor) }
+    var weight by remember { mutableStateOf(field.weight?.toString() ?: "") }
     var newCategory by remember { mutableStateOf(category) }
 
     var hexString by remember(targetColor) {
@@ -74,6 +75,16 @@ fun FieldEditorDialog(
                     FilterChip(selected = type == "number", onClick = { type = "number" }, label = { Text("Number") })
                     FilterChip(selected = type == "text", onClick = { type = "text" }, label = { Text("Text") })
                     FilterChip(selected = type == "boolean", onClick = { type = "boolean" }, label = { Text("Boolean") })
+                }
+
+                if (type == "number" && newCategory == "Judgment") {
+                    OutlinedTextField(
+                        value = weight,
+                        onValueChange = { weight = it },
+                        label = { Text("Accuracy Weight (e.g., 1.0 or 0.5)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = { Text("0.0 - 1.0") }
+                    )
                 }
 
                 if (type == "boolean") {
@@ -133,7 +144,14 @@ fun FieldEditorDialog(
         },
         confirmButton = {
             TextButton(onClick = {
-                val updatedField = field.copy(key = key, label = label, type = type, threshold = threshold, targetColor = targetColor)
+                val updatedField = field.copy(
+                    key = key,
+                    label = label,
+                    type = type,
+                    threshold = threshold,
+                    targetColor = targetColor,
+                    weight = weight.toDoubleOrNull()
+                )
                 val dataWithUpdatedField = configData.updateField(category, index, updatedField)
                 val finalData = if (newCategory != category) {
                     dataWithUpdatedField.moveField(category, index, newCategory)

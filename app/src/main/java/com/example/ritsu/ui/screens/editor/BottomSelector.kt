@@ -3,6 +3,7 @@ package com.example.ritsu.ui.screens.editor
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -45,6 +46,7 @@ fun BottomSelector(
                         add("titleRect" to "Title")
                         add("scoreRect" to "Score")
                         add("comboRect" to "Combo")
+                        add("accuracyRect" to "Accuracy")
                         add("difficultyNameRect" to "Diff Name")
                         add("difficultyValRect" to "Diff Val")
                         add("rankRect" to "Rank")
@@ -91,6 +93,18 @@ fun BottomSelector(
                             Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(Modifier.width(4.dp))
                             Text("Properties", fontSize = 13.sp)
+                        }
+                    }
+
+                    if (currentCategory == "Judgment" && (data?.judgments?.size ?: 0) >= 2) {
+                        OutlinedButton(
+                            onClick = { viewModel.autoSetWeights() },
+                            modifier = Modifier.height(36.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp)
+                        ) {
+                            Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text("Auto Weights", fontSize = 13.sp)
                         }
                     }
                 }

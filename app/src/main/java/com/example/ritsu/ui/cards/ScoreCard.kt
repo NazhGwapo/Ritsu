@@ -28,7 +28,9 @@ import androidx.compose.ui.graphics.asImageBitmap
 import android.graphics.Bitmap
 
 import android.text.format.DateUtils
-import androidx.compose.runtime.remember
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.runtime.*
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -39,9 +41,14 @@ fun ScoreCard(
     gameName: String = "Game Name",
     imageBitmap: Bitmap? = null,
     displayIconUri: String? = null,
+    useRank: Boolean = true,
+    booleanLabels: List<String> = emptyList(),
     onClick: () -> Unit = {},
-    onMoreClick: () -> Unit = {}
+    onEdit: () -> Unit = {},
+    onDelete: () -> Unit = {}
 ) {
+    var expanded by remember { mutableStateOf(false) }
+
     Card(
         onClick = onClick,
         modifier = Modifier
@@ -101,15 +108,60 @@ fun ScoreCard(
             Column(
                 modifier = Modifier.weight(1f)
             ) {
-                Text(
-                    text = score.songTitle,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    if (useRank && score.playRank.isNotBlank()) {
+                        Surface(
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            shape = RoundedCornerShape(4.dp)
+                        ) {
+                            Text(
+                                text = score.playRank,
+                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Black,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
+                    }
+                    Text(
+                        text = score.songTitle,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                if (booleanLabels.isNotEmpty()) {
+                    Row(
+                        modifier = Modifier.padding(top = 2.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        booleanLabels.forEach { label ->
+                            Surface(
+                                color = MaterialTheme.colorScheme.secondaryContainer,
+                                shape = RoundedCornerShape(4.dp)
+                            ) {
+                                Text(
+                                    text = label,
+                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                    fontSize = 10.sp
+                                )
+                            }
+                        }
+                    }
+                }
+
                 Text(
                     text = gameName,
                     style = MaterialTheme.typography.bodySmall,
@@ -124,14 +176,14 @@ fun ScoreCard(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                val timeInfo = remember(score.timestamp) {
+                val timeInfo = remember(score.playTimestamp) {
                     val relativeTime = DateUtils.getRelativeTimeSpanString(
-                        score.timestamp,
+                        score.playTimestamp,
                         System.currentTimeMillis(),
                         DateUtils.SECOND_IN_MILLIS
                     ).toString()
                     val timeFormat = SimpleDateFormat("h:mm a", Locale.getDefault())
-                    "$relativeTime, ${timeFormat.format(Date(score.timestamp))}"
+                    "$relativeTime, ${timeFormat.format(Date(score.playTimestamp))}"
                 }
                 Text(
                     text = timeInfo,
@@ -142,12 +194,35 @@ fun ScoreCard(
             }
 
             // Right Options Button
-            IconButton(onClick = onMoreClick) {
-                Icon(
-                    imageVector = Icons.Default.MoreHoriz,
-                    contentDescription = "More options",
-                    tint = MaterialTheme.colorScheme.onSurface
-                )
+            Box {
+                IconButton(onClick = { expanded = true }) {
+                    Icon(
+                        imageVector = Icons.Default.MoreHoriz,
+                        contentDescription = "More options",
+                        tint = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                DropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Edit") },
+                        onClick = {
+                            expanded = false
+                            onEdit()
+                        },
+                        leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
+                        onClick = {
+                            expanded = false
+                            onDelete()
+                        },
+                        leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) }
+                    )
+                }
             }
         }
     }
@@ -168,7 +243,8 @@ fun ScoreCardPreview() {
                 maxCombo = 1000,
                 accuracy = 98.76,
                 playRank = "RANK",
-                timestamp = System.currentTimeMillis()
+                playTimestamp = System.currentTimeMillis(),
+                importTimestamp = System.currentTimeMillis()
             ),
             gameName = "Game"
         )

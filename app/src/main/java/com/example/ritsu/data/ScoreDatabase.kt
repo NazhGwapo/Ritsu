@@ -15,7 +15,7 @@ data class GameConfig(
     // Store JSON representation of fields and formula
     val configData: String,
     val configVersion: Int = 1,
-    val displayIconUri: String? = null
+    val displayIconUri: String? = null,
 )
 
 @Entity(
@@ -41,11 +41,12 @@ data class GenericScore(
     val maxCombo: Int,
     val accuracy: Double,
     val playRank: String,
-    val timestamp: Long
+    val playTimestamp: Long,
+    val importTimestamp: Long = System.currentTimeMillis()
 ) {
     companion object {
         fun parseDifficulty(diffStr: String): Double {
-            val numericPart = diffStr.filter { (it.isDigit() || it == '.') }.toDoubleOrNull() ?: 0.0
+            val numericPart = diffStr.filter { it.isDigit() || it == '.' }.toDoubleOrNull() ?: 0.0
             var bonus = 0.0
             if (diffStr.contains('+')) bonus += 0.5
             return numericPart + bonus
@@ -107,6 +108,15 @@ interface ScoreDao {
         }
     }
 
+    @Update
+    suspend fun updateScore(score: GenericScore)
+
+    @Query("DELETE FROM score_details WHERE scoreId = :scoreId")
+    suspend fun deleteDetailsForScore(scoreId: Long)
+
+    @Query("DELETE FROM generic_scores WHERE id = :id")
+    suspend fun deleteScoreById(id: Long)
+
     @Insert
     suspend fun insertScore(score: GenericScore): Long
 
@@ -114,7 +124,7 @@ interface ScoreDao {
     suspend fun insertDetails(details: List<ScoreDetail>)
 
     @Transaction // Necessary because it queries multiple tables
-    @Query("SELECT * FROM generic_scores ORDER BY timestamp DESC")
+    @Query("SELECT * FROM generic_scores ORDER BY playTimestamp DESC")
     fun getAllScores(): Flow<List<FullScoreRecord>>
 
     @Query("SELECT * FROM game_configs")
@@ -142,7 +152,7 @@ interface ScoreDao {
 
 // --- 4. THE DATABASE ---
 
-@Database(entities = [GameConfig::class, GenericScore::class, ScoreDetail::class], version = 6)
+@Database(entities = [GameConfig::class, GenericScore::class, ScoreDetail::class], version = 7)
 abstract class RitsuDatabase : RoomDatabase() {
     abstract fun scoreDao(): ScoreDao
 

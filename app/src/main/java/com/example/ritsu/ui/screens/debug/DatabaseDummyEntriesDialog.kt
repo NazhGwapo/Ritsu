@@ -208,7 +208,8 @@ fun DatabaseDummyEntriesDialog(onDismiss: () -> Unit) {
                                         maxCombo = totalNotes - (judgmentValues[judgments.lastOrNull()?.key] ?: 0),
                                         accuracy = (accuracy * 100).toInt() / 100.0,
                                         playRank = playRank,
-                                        timestamp = System.currentTimeMillis() - Random.nextLong(0, 1000L * 60 * 60 * 24 * 30)
+                                        playTimestamp = System.currentTimeMillis() - Random.nextLong(0, 1000L * 60 * 60 * 24 * 30),
+                                        importTimestamp = System.currentTimeMillis()
                                     )
                                     
                                     val scoreId = database.scoreDao().insertScore(randomScore)

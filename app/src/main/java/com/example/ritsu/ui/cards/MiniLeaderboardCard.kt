@@ -73,14 +73,14 @@ fun MiniLeaderboardCard(
             modifier = Modifier.weight(1f)
         )
 
-        val timeInfo = remember(score.timestamp) {
+        val timeInfo = remember(score.playTimestamp) {
             val relativeTime = DateUtils.getRelativeTimeSpanString(
-                score.timestamp,
+                score.playTimestamp,
                 System.currentTimeMillis(),
                 DateUtils.SECOND_IN_MILLIS
             ).toString()
             val timeFormat = SimpleDateFormat("MM/dd/yyyy", Locale.getDefault())
-            "${timeFormat.format(Date(score.timestamp))}, $relativeTime"
+            "${timeFormat.format(Date(score.playTimestamp))}, $relativeTime"
         }
 
         Text(
@@ -110,7 +110,7 @@ fun MiniLeaderboardCardPreview() {
                     maxCombo = 500,
                     accuracy = 98.5,
                     playRank = "S",
-                    timestamp = System.currentTimeMillis() - 1000 * 60 * 60 * 24 * 30L
+                    playTimestamp = System.currentTimeMillis() - 1000 * 60 * 60 * 24 * 30L
                 ),
                 isHighlighted = false
             )
@@ -127,7 +127,7 @@ fun MiniLeaderboardCardPreview() {
                     maxCombo = 450,
                     accuracy = 96.32,
                     playRank = "A",
-                    timestamp = System.currentTimeMillis() - 1000 * 60 * 10L
+                    playTimestamp = System.currentTimeMillis() - 1000 * 60 * 10L
                 ),
                 isHighlighted = true
             )
@@ -144,7 +144,7 @@ fun MiniLeaderboardCardPreview() {
                     maxCombo = 300,
                     accuracy = 92.1,
                     playRank = "B",
-                    timestamp = System.currentTimeMillis() - 1000 * 60 * 60L
+                    playTimestamp = System.currentTimeMillis() - 1000 * 60 * 60L
                 ),
                 displayValue = "B - 92.10%"
             )
