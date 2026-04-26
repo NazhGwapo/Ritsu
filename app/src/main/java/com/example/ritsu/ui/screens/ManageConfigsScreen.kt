@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material3.*
@@ -21,13 +22,16 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import com.example.ritsu.data.GameConfig
 import com.example.ritsu.data.GameConfigData
 import com.example.ritsu.data.RitsuDatabase
 import com.example.ritsu.ui.components.AppPickerDialog
 import com.example.ritsu.ui.components.ConfigDetailDialog
+import com.example.ritsu.ui.components.NewConfigDialog
 import com.example.ritsu.ui.utils.saveDrawableToFile
 import com.example.ritsu.ui.utils.saveUriToFile
 import kotlinx.coroutines.launch
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 @Composable
@@ -43,6 +47,7 @@ fun ManageConfigsScreen(onEditConfig: () -> Unit) {
         configs.find { it.id == selectedConfigId }
     }
     var showAppPicker by remember { mutableStateOf(value = false) }
+    var showNewConfigDialog by remember { mutableStateOf(false) }
 
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
@@ -106,6 +111,20 @@ fun ManageConfigsScreen(onEditConfig: () -> Unit) {
                     )
                     HorizontalDivider()
                 }
+
+                item {
+                    Button(
+                        onClick = { showNewConfigDialog = true },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Make a new config")
+                    }
+                }
+
                 if (configs.isEmpty()) {
                     item {
                         Text(
@@ -159,6 +178,23 @@ fun ManageConfigsScreen(onEditConfig: () -> Unit) {
                 }
                 showAppPicker = false
             },
+        )
+    }
+
+    if (showNewConfigDialog) {
+        NewConfigDialog(
+            onDismiss = { showNewConfigDialog = false },
+            onConfirm = { name ->
+                scope.launch {
+                    val newConfigData = GameConfigData(gameName = name)
+                    val config = GameConfig(
+                        gameName = name,
+                        configData = json.encodeToString(newConfigData)
+                    )
+                    database.scoreDao().insertConfig(config)
+                    showNewConfigDialog = false
+                }
+            }
         )
     }
 }

@@ -107,17 +107,33 @@ fun BottomSelector(
             }
 
             val currentKey = selectedKey
-            ScrollableTabRow(
-                selectedTabIndex = fieldsInCategory.indexOfFirst { it.first == currentKey }.coerceAtLeast(0),
-                edgePadding = 16.dp,
-                containerColor = Color.Transparent,
-                divider = {}
-            ) {
-                fieldsInCategory.forEach { (fieldKey, label) ->
-                    Tab(
-                        selected = currentKey == fieldKey,
-                        onClick = { viewModel.setSelectedKey(fieldKey) },
-                        text = { Text(label, fontSize = 13.sp) }
+            if (fieldsInCategory.isNotEmpty()) {
+                ScrollableTabRow(
+                    selectedTabIndex = fieldsInCategory.indexOfFirst { it.first == currentKey }.coerceAtLeast(0),
+                    edgePadding = 16.dp,
+                    containerColor = Color.Transparent,
+                    divider = {}
+                ) {
+                    fieldsInCategory.forEach { (fieldKey, label) ->
+                        Tab(
+                            selected = currentKey == fieldKey,
+                            onClick = { viewModel.setSelectedKey(fieldKey) },
+                            text = { Text(label, fontSize = 13.sp) }
+                        )
+                    }
+                }
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                        .padding(horizontal = 16.dp),
+                    contentAlignment = Alignment.CenterStart
+                ) {
+                    Text(
+                        "No fields in this category.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
