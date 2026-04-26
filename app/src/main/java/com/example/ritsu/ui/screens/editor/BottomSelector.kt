@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.ritsu.ui.components.VersionEditorDialog
 
 @Composable
 fun BottomSelector(
@@ -19,6 +20,7 @@ fun BottomSelector(
 ) {
     val data by viewModel.configData.collectAsState()
     val selectedKey by viewModel.selectedKey.collectAsState()
+    var showVersionDialog by remember { mutableStateOf(false) }
     
     val categories = listOf("Generic", "Judgment", "Metric", "Misc")
     var selectedCategoryIndex by remember(selectedKey) {
@@ -103,6 +105,21 @@ fun BottomSelector(
                         Spacer(Modifier.width(4.dp))
                         Text("Add Field", fontSize = 13.sp)
                     }
+                } else {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "Version: ${data?.configVersion ?: 1}",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        IconButton(
+                            onClick = { showVersionDialog = true },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(Icons.Default.Edit, contentDescription = "Edit Version", modifier = Modifier.size(16.dp))
+                        }
+                    }
                 }
             }
 
@@ -140,5 +157,16 @@ fun BottomSelector(
             
             Spacer(modifier = Modifier.height(8.dp))
         }
+    }
+
+    if (showVersionDialog && data != null) {
+        VersionEditorDialog(
+            currentVersion = data!!.configVersion,
+            onDismiss = { showVersionDialog = false },
+            onConfirm = { newVersion ->
+                viewModel.updateConfigData(data!!.copy(configVersion = newVersion))
+                showVersionDialog = false
+            }
+        )
     }
 }

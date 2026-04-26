@@ -43,13 +43,20 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import kotlinx.coroutines.delay
 
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.platform.LocalContext
+import com.example.ritsu.data.ThemeConfig
+import com.example.ritsu.data.ThemeRepository
+import com.example.ritsu.ui.screens.ThemeScreen
+
 enum class Screen {
     Score,
     Data,
     Options,
     ManageConfigs,
     Debug,
-    BoxEditor
+    BoxEditor,
+    Theme
 }
 
 class MainActivity : ComponentActivity() {
@@ -57,15 +64,19 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            RitsuTheme {
-                RitsuApp()
+            val context = LocalContext.current
+            val themeRepository = remember { ThemeRepository(context) }
+            val themeConfig by themeRepository.themeConfig.collectAsState(initial = ThemeConfig())
+
+            RitsuTheme(themeConfig = themeConfig) {
+                RitsuApp(themeRepository)
             }
         }
     }
 }
 
 @Composable
-fun RitsuApp() {
+fun RitsuApp(themeRepository: ThemeRepository) {
     // This variable keeps track of which screen to show
     var showSplash by remember { mutableStateOf(true) }
 
@@ -84,7 +95,7 @@ fun RitsuApp() {
         if (isSplash) {
             SplashScreenContent()
         } else {
-            MainContent()
+            MainContent(themeRepository)
         }
     }
 }
@@ -120,7 +131,7 @@ fun SplashScreenContent() {
 }
 
 @Composable
-fun MainContent() {
+fun MainContent(themeRepository: ThemeRepository) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
 
@@ -130,6 +141,7 @@ fun MainContent() {
         Screen.ManageConfigs.name -> Screen.ManageConfigs
         Screen.Debug.name -> Screen.Debug
         Screen.BoxEditor.name -> Screen.BoxEditor
+        Screen.Theme.name -> Screen.Theme
         else -> Screen.Score
     }
 
@@ -183,7 +195,8 @@ fun MainContent() {
             composable(Screen.Options.name) {
                 OptionsScreen(
                     onManageConfigsClick = { navController.navigate(Screen.ManageConfigs.name) },
-                    onDebugClick = { navController.navigate(Screen.Debug.name) }
+                    onDebugClick = { navController.navigate(Screen.Debug.name) },
+                    onThemeClick = { navController.navigate(Screen.Theme.name) }
                 )
             }
             composable(Screen.ManageConfigs.name) {
@@ -193,6 +206,7 @@ fun MainContent() {
             }
             composable(Screen.Debug.name) { DebugScreen() }
             composable(Screen.BoxEditor.name) { BoxEditorScreen() }
+            composable(Screen.Theme.name) { ThemeScreen(themeRepository) }
         }
     }
 }

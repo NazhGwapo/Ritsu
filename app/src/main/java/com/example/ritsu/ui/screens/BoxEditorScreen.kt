@@ -73,6 +73,7 @@ fun BoxEditorScreen() {
                             scope.launch {
                                 val updatedConfig = config.copy(
                                     configData = json.encodeToString(data),
+                                    configVersion = data.configVersion
                                 )
                                 database.scoreDao().updateConfig(updatedConfig)
                                 snackbarHostState.showSnackbar("Configuration saved")

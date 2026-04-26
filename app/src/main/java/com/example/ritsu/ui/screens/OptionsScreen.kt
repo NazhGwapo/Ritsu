@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.FileUpload
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -22,7 +23,11 @@ import com.example.ritsu.data.GameConfig
 import com.example.ritsu.data.RitsuDatabase
 
 @Composable
-fun OptionsScreen(onManageConfigsClick: () -> Unit, onDebugClick: () -> Unit) {
+fun OptionsScreen(
+    onManageConfigsClick: () -> Unit,
+    onDebugClick: () -> Unit,
+    onThemeClick: () -> Unit
+) {
     val context = LocalContext.current
     val database = remember { RitsuDatabase.getDatabase(context) }
     val configs by database.scoreDao().getAllConfigs().collectAsState(initial = emptyList())
@@ -77,6 +82,13 @@ fun OptionsScreen(onManageConfigsClick: () -> Unit, onDebugClick: () -> Unit) {
                 headlineContent = { Text("Manage Configurations") },
                 leadingContent = { Icon(Icons.Default.Settings, contentDescription = null) },
                 modifier = Modifier.clickable { onManageConfigsClick() }
+            )
+        }
+        item {
+            ListItem(
+                headlineContent = { Text("Theme") },
+                leadingContent = { Icon(Icons.Default.Palette, contentDescription = null) },
+                modifier = Modifier.clickable { onThemeClick() }
             )
         }
         item {
