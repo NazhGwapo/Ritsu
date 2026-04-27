@@ -9,6 +9,13 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -40,7 +47,6 @@ import com.example.ritsu.ui.screens.TopGamesScreen
 import com.example.ritsu.ui.screens.TopChartsScreen
 import com.example.ritsu.ui.screens.TopScoresScreen
 import com.example.ritsu.ui.cards.TopGameItem
-import com.example.ritsu.ui.cards.TopChartItem
 import com.example.ritsu.ui.cards.TopScoreItem
 import com.example.ritsu.data.FullScoreRecord
 import com.example.ritsu.data.RitsuDatabase
@@ -287,6 +293,12 @@ fun MainContent(themeRepository: ThemeRepository) {
                 val configId = backStackEntry.arguments?.getLong("configId") ?: 0L
                 GameDetailsScreen(
                     configId = configId,
+                    onChartClick = { cid, songTitle, difficultyName, difficultyVal ->
+                        val encodedTitle = android.net.Uri.encode(songTitle)
+                        val encodedDName = android.net.Uri.encode(difficultyName)
+                        val encodedDVal = android.net.Uri.encode(difficultyVal)
+                        navController.navigate(Screen.ChartDetails.name + "/$cid/$encodedTitle/$encodedDName/$encodedDVal")
+                    },
                     onBack = { navController.popBackStack() }
                 )
             }
@@ -397,6 +409,8 @@ fun MainContent(themeRepository: ThemeRepository) {
                 val configs by database.scoreDao().getAllConfigs().collectAsState(initial = emptyList())
                 val json = remember { Json { ignoreUnknownKeys = true } }
 
+                val sortMode = "Plays"
+
                 val filteredScores = remember(scores, range, option) {
                     val currentScores = scores ?: return@remember emptyList<FullScoreRecord>()
                     val sdfDay = java.text.SimpleDateFormat("MMM d, yyyy", java.util.Locale.getDefault())
@@ -445,52 +459,89 @@ fun MainContent(themeRepository: ThemeRepository) {
                     }
                 }
 
-                val topCharts = remember(filteredScores, configs) {
+                val topCharts = remember(filteredScores, configs, sortMode) {
                     filteredScores.groupBy { "${it.genericScore.configId}|${it.genericScore.songTitle}|${it.genericScore.difficultyName}|${it.genericScore.difficultyVal}" }
                         .map { (key, groupScores) ->
                             val configId = key.split("|").first().toLong()
                             val config = configs.find { it.id == configId }
-                            val first = groupScores.first().genericScore
-
-                            val booleanFields = config?.let {
-                                try {
-                                    json.decodeFromString<com.example.ritsu.data.GameConfigData>(it.configData).allFieldsWithCategory
-                                        .filter { (field, _) -> field.type == "boolean" }
-                                        .map { (field, _) -> field.key to field.label }
-                                } catch (e: Exception) { emptyList<Pair<String, String>>() }
-                            } ?: emptyList()
-
-                            val achievementList = booleanFields.mapNotNull { (fieldKey, label) ->
-                                val count = groupScores.sumOf { record ->
-                                    record.details.count { it.key == fieldKey && it.value == "true" }
-                                }
-                                if (count > 0) label to count else null
+                            
+                            val bestRecord = if (sortMode == "Plays") {
+                                groupScores.maxByOrNull { it.genericScore.playTimestamp }!!
+                            } else {
+                                groupScores.maxByOrNull { record ->
+                                    com.example.ritsu.data.RankingUtils.calculateRankingValue(record, config, sortMode)
+                                }!!
                             }
 
-                            TopChartItem(
-                                rank = 0,
-                                songTitle = first.songTitle,
+                            com.example.ritsu.data.RankingUtils.mapToTopScoreItem(
+                                record = bestRecord,
+                                config = config,
                                 playCount = groupScores.size,
-                                configId = configId,
-                                difficultyName = first.difficultyName,
-                                difficultyVal = first.difficultyVal,
-                                achievements = achievementList,
-                                displayIconUri = config?.displayIconUri
+                                showRank = (sortMode != "Plays")
                             )
                         }
-                        .sortedByDescending { it.playCount }
+                        .sortedByDescending { item ->
+                            if (sortMode == "Plays") {
+                                item.playCount.toDouble()
+                            } else {
+                                val config = configs.find { it.gameName == item.gameName && it.displayIconUri == item.displayIconUri }
+                                val originalRecord = filteredScores.find { 
+                                    it.genericScore.songTitle == item.songTitle &&
+                                    it.genericScore.difficultyName == item.difficultyName &&
+                                    it.genericScore.difficultyVal == item.difficultyVal &&
+                                    it.genericScore.id == item.scoreId
+                                }
+                                if (originalRecord != null) {
+                                    com.example.ritsu.data.RankingUtils.calculateRankingValue(originalRecord, config, sortMode)
+                                } else 0.0
+                            }
+                        }
                         .mapIndexed { index, item -> item.copy(rank = index + 1) }
                 }
 
+                var selectedScoreForDetails by remember { mutableStateOf<FullScoreRecord?>(null) }
+
                 TopChartsScreen(
                     topCharts = topCharts,
+                    sortMode = sortMode,
                     onChartClick = { chart ->
-                        val encodedTitle = android.net.Uri.encode(chart.songTitle)
-                        val encodedDiffName = android.net.Uri.encode(chart.difficultyName)
-                        val encodedDiffVal = android.net.Uri.encode(chart.difficultyVal)
-                        navController.navigate(Screen.ChartDetails.name + "/${chart.configId}/$encodedTitle/$encodedDiffName/$encodedDiffVal")
+                        if (sortMode == "Plays") {
+                            val config = configs.find { it.gameName == chart.gameName && it.displayIconUri == chart.displayIconUri }
+                            val configId = config?.id ?: 0L
+                            val encodedTitle = android.net.Uri.encode(chart.songTitle)
+                            val encodedDiffName = android.net.Uri.encode(chart.difficultyName)
+                            val encodedDiffVal = android.net.Uri.encode(chart.difficultyVal)
+                            navController.navigate(Screen.ChartDetails.name + "/$configId/$encodedTitle/$encodedDiffName/$encodedDiffVal")
+                        } else {
+                            selectedScoreForDetails = filteredScores.find { it.genericScore.id == chart.scoreId }
+                        }
                     }
                 )
+
+                if (selectedScoreForDetails != null) {
+                    val config = configs.find { it.id == selectedScoreForDetails!!.genericScore.configId }
+                    if (config != null) {
+                        ScoreDetailsDialog(
+                            scoreRecord = selectedScoreForDetails!!,
+                            gameConfig = config,
+                            scoreDao = database.scoreDao(),
+                            onDismiss = { selectedScoreForDetails = null },
+                            onChartDetails = {
+                                val s = selectedScoreForDetails!!.genericScore
+                                val encodedTitle = android.net.Uri.encode(s.songTitle)
+                                val encodedDiffName = android.net.Uri.encode(s.difficultyName)
+                                val encodedDiffVal = android.net.Uri.encode(s.difficultyVal)
+                                selectedScoreForDetails = null
+                                navController.navigate(Screen.ChartDetails.name + "/${s.configId}/$encodedTitle/$encodedDiffName/$encodedDiffVal")
+                            },
+                            onGameDetails = {
+                                val s = selectedScoreForDetails!!.genericScore
+                                selectedScoreForDetails = null
+                                navController.navigate(Screen.GameDetails.name + "/${s.configId}")
+                            }
+                        )
+                    }
+                }
             }
             composable(Screen.TopScores.name + "/{range}/{option}/{sortMode}/{gameFilter}") { backStackEntry ->
                 val range = backStackEntry.arguments?.getString("range") ?: "Month"
@@ -563,35 +614,16 @@ fun MainContent(themeRepository: ThemeRepository) {
                         }
                         .map { record ->
                             val config = configs.find { it.id == record.genericScore.configId }
-                            val totalNoteCount = if (config != null) {
-                                try {
-                                    json.decodeFromString<com.example.ritsu.data.GameConfigData>(config.configData)
-                                        .let { com.example.ritsu.data.AccuracyCalculator.getTotalNoteCount(record.details, it) }
-                                } catch (e: Exception) { 0 }
-                            } else 0
-                            
-                            val weight = totalNoteCount.coerceAtLeast(1).toDouble()
-                            val rankingValue = if (sortMode == "Accuracy") {
-                                weight * record.genericScore.accuracy
-                            } else {
-                                weight * record.genericScore.maxCombo
-                            }
+                            val rankingValue = com.example.ritsu.data.RankingUtils.calculateRankingValue(record, config, sortMode)
                             Pair(record, rankingValue)
                         }
                         .sortedByDescending { it.second }
                         .mapIndexed { index, (record, _) ->
                             val config = configs.find { it.id == record.genericScore.configId }
-                            TopScoreItem(
-                                scoreId = record.genericScore.id,
-                                rank = index + 1,
-                                songTitle = record.genericScore.songTitle,
-                                difficultyName = record.genericScore.difficultyName,
-                                difficultyVal = record.genericScore.difficultyVal,
-                                accuracy = record.genericScore.accuracy,
-                                maxCombo = record.genericScore.maxCombo,
-                                playRank = record.genericScore.playRank,
-                                gameName = config?.gameName ?: "Unknown",
-                                displayIconUri = config?.displayIconUri
+                            com.example.ritsu.data.RankingUtils.mapToTopScoreItem(
+                                record = record,
+                                config = config,
+                                rank = index + 1
                             )
                         }
                 }
@@ -621,6 +653,11 @@ fun MainContent(themeRepository: ThemeRepository) {
                                 val encodedDiffVal = android.net.Uri.encode(s.difficultyVal)
                                 selectedScoreForDetails = null
                                 navController.navigate(Screen.ChartDetails.name + "/${s.configId}/$encodedTitle/$encodedDiffName/$encodedDiffVal")
+                            },
+                            onGameDetails = {
+                                val s = selectedScoreForDetails!!.genericScore
+                                selectedScoreForDetails = null
+                                navController.navigate(Screen.GameDetails.name + "/${s.configId}")
                             }
                         )
                     }

@@ -6,13 +6,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.ritsu.ui.cards.ChartListItem
-import com.example.ritsu.ui.cards.TopChartItem
+import com.example.ritsu.ui.cards.ScoreListItem
+import com.example.ritsu.ui.cards.TopScoreItem
 
 @Composable
 fun TopChartsScreen(
-    onChartClick: (TopChartItem) -> Unit,
-    topCharts: List<TopChartItem>
+    onChartClick: (TopScoreItem) -> Unit,
+    topCharts: List<TopScoreItem>,
+    sortMode: String
 ) {
     Box(
         modifier = Modifier.fillMaxSize()
@@ -23,8 +24,8 @@ fun TopChartsScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            items(topCharts) { chart ->
-                ChartListItem(chart = chart, onClick = { onChartClick(chart) })
+            items(topCharts) { score ->
+                ScoreListItem(score = score, selectedSort = sortMode, onClick = { onChartClick(score) })
             }
         }
     }

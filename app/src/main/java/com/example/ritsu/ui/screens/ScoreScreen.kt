@@ -304,6 +304,10 @@ fun ScoreScreen(
                     val encodedDiffVal = android.net.Uri.encode(s.difficultyVal)
                     
                     navController.navigate(Screen.ChartDetails.name + "/${s.configId}/$encodedTitle/$encodedDiffName/$encodedDiffVal")
+                },
+                onGameDetails = {
+                    selectedScore = null
+                    navController.navigate(Screen.GameDetails.name + "/${record.genericScore.configId}")
                 }
             )
         }

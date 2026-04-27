@@ -4,10 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,6 +20,10 @@ import com.example.ritsu.data.GameConfigData
 import com.example.ritsu.data.RitsuDatabase
 import com.example.ritsu.ui.cards.MiniLeaderboardCard
 import com.example.ritsu.ui.components.LeaderboardSortMode
+import com.example.ritsu.ui.components.LineGraph
+import com.example.ritsu.ui.components.MultiLineGraph
+import com.example.ritsu.ui.components.GraphSeries
+import com.example.ritsu.ui.components.DifficultyBadge
 import com.example.ritsu.ui.components.ScoreDetailsDialog
 import kotlinx.serialization.json.Json
 
@@ -39,6 +40,8 @@ fun ChartDetailsScreen(
     val context = LocalContext.current
     val database = remember { RitsuDatabase.getDatabase(context) }
     val scoreDao = database.scoreDao()
+    
+    val json = remember { Json { ignoreUnknownKeys = true } }
 
     val configs by scoreDao.getAllConfigs().collectAsState(initial = emptyList())
     val gameConfig = configs.find { it.id == configId }
@@ -49,17 +52,6 @@ fun ChartDetailsScreen(
     val allScoresForSong by scoreDao.getUniqueChartsForSong(configId, songTitle)
         .collectAsState(initial = emptyList())
     
-    // We need to count plays for each unique chart. 
-    // Since getUniqueChartsForSong returns grouped results (one per chart),
-    // we need to actually fetch counts for those charts.
-    val chartPlayCounts = remember(allScoresForSong) {
-        mutableMapOf<String, Int>()
-    }
-
-    // A better way is to fetch all scores for the song and group them in memory
-    // But for now, since we have the charts, let's just show them.
-    // I'll update the aggregation to group everything manually from a full list for accurate counts.
-
     var sortMode by remember { mutableStateOf(LeaderboardSortMode.SCORE) }
     var selectedScoreRecord by remember { mutableStateOf<FullScoreRecord?>(null) }
 
@@ -69,6 +61,10 @@ fun ChartDetailsScreen(
             LeaderboardSortMode.ACCURACY -> chartScores.sortedByDescending { it.genericScore.accuracy }
             LeaderboardSortMode.MAX_COMBO -> chartScores.sortedByDescending { it.genericScore.maxCombo }
         }
+    }
+
+    val scoresOldestToNewest = remember(chartScores) {
+        chartScores.sortedBy { it.genericScore.playTimestamp }
     }
 
     Surface(
@@ -109,15 +105,125 @@ fun ChartDetailsScreen(
 
             // Graphs Section
             item {
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
                     Text(
-                        text = "Graphs",
+                        text = "Performance Trends",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold
                     )
                     
-                    GraphPlaceholder("Accuracy over time")
-                    GraphPlaceholder("Score over time")
+                    val sdf = remember { java.text.SimpleDateFormat("MM/dd", java.util.Locale.getDefault()) }
+                    val startDate = scoresOldestToNewest.firstOrNull()?.genericScore?.playTimestamp?.let { sdf.format(java.util.Date(it)) }
+                    val endDate = scoresOldestToNewest.lastOrNull()?.genericScore?.playTimestamp?.let { sdf.format(java.util.Date(it)) }
+
+                    // 1. Score Graph
+                    LineGraph(
+                        data = scoresOldestToNewest.map { it.genericScore.totalScore.toFloat() },
+                        label = "Score over time",
+                        startLabel = startDate,
+                        endLabel = endDate,
+                        valueFormatter = { "%,d".format(it.toLong()) },
+                        color = MaterialTheme.colorScheme.primary
+                    )
+
+                    // 2. Accuracy Graph
+                    LineGraph(
+                        data = scoresOldestToNewest.map { it.genericScore.accuracy.toFloat() },
+                        label = "Accuracy over time",
+                        startLabel = startDate,
+                        endLabel = endDate,
+                        valueFormatter = { "%.2f%%".format(it) },
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+
+                    // 3. Combo Graph
+                    LineGraph(
+                        data = scoresOldestToNewest.map { it.genericScore.maxCombo.toFloat() },
+                        label = "Max Combo over time",
+                        startLabel = startDate,
+                        endLabel = endDate,
+                        valueFormatter = { "${it.toInt()}x" },
+                        color = Color(0xFFFFA000) // Orange/Amber
+                    )
+
+                    // 4. Judgement Breakdown Graph
+                    val judgementSeries = remember(scoresOldestToNewest, gameConfig) {
+                        val configData = gameConfig?.let {
+                            try {
+                                json.decodeFromString<GameConfigData>(it.configData)
+                            } catch (_: Exception) { null }
+                        }
+                        
+                        val judgementKeys = configData?.judgments?.map { it.key } ?: emptyList()
+                        val judgementLabels = configData?.judgments?.associate { it.key to it.label } ?: emptyMap()
+                        
+                        val colors = listOf(
+                            Color(0xFF4CAF50), // Green
+                            Color(0xFFFFEB3B), // Yellow
+                            Color(0xFF03A9F4), // Light Blue
+                            Color(0xFFF44336), // Red
+                            Color(0xFF9C27B0), // Purple
+                            Color(0xFFFF9800)  // Orange
+                        )
+
+                        judgementKeys.mapIndexed { index, key ->
+                            GraphSeries(
+                                label = judgementLabels[key] ?: key,
+                                data = scoresOldestToNewest.map { record ->
+                                    record.details.find { it.key == key }?.value?.toFloatOrNull() ?: 0f
+                                },
+                                color = colors.getOrElse(index) { Color.Gray }
+                            )
+                        }
+                    }
+
+                    if (judgementSeries.isNotEmpty()) {
+                        MultiLineGraph(
+                            series = judgementSeries,
+                            label = "Judgement Breakdown",
+                            startLabel = startDate,
+                            endLabel = endDate
+                        )
+                    }
+
+                    // 5. Metric Breakdown Graph
+                    val metricSeries = remember(scoresOldestToNewest, gameConfig) {
+                        val configData = gameConfig?.let {
+                            try {
+                                json.decodeFromString<GameConfigData>(it.configData)
+                            } catch (_: Exception) { null }
+                        }
+                        
+                        val metricFields = configData?.metrics?.filter { it.type != "boolean" } ?: emptyList()
+                        
+                        val colors = listOf(
+                            Color(0xFF00BCD4), // Cyan
+                            Color(0xFFFF5722), // Deep Orange
+                            Color(0xFF8BC34A), // Light Green
+                            Color(0xFFE91E63), // Pink
+                            Color(0xFF673AB7), // Deep Purple
+                            Color(0xFFCDDC39)  // Lime
+                        )
+
+                        metricFields.mapIndexed { index, field ->
+                            GraphSeries(
+                                label = field.label,
+                                data = scoresOldestToNewest.map { record ->
+                                    record.details.find { it.key == field.key }?.value?.toFloatOrNull() ?: 0f
+                                },
+                                color = colors.getOrElse(index) { Color.Gray }
+                            )
+                        }
+                    }
+
+                    if (metricSeries.isNotEmpty()) {
+                        MultiLineGraph(
+                            series = metricSeries,
+                            label = "Metric Breakdown",
+                            startLabel = startDate,
+                            endLabel = endDate
+                        )
+                    }
                 }
             }
 
@@ -173,9 +279,9 @@ fun ChartDetailsScreen(
 
                                 val shortenedBooleanLabels = remember(record, gameConfig) {
                                     val configDataStr = gameConfig?.configData
-                                    if (configDataStr == null) emptyList<String>() else {
+                                    if (configDataStr == null) emptyList() else {
                                         try {
-                                            val cData = Json { ignoreUnknownKeys = true }.decodeFromString<GameConfigData>(configDataStr)
+                                            val cData = json.decodeFromString<GameConfigData>(configDataStr)
                                             val booleanFields = cData.allFieldsWithCategory
                                                 .filter { it.first.type == "boolean" }
                                                 .map { it.first }
@@ -282,65 +388,11 @@ fun ChartDetailsScreen(
             gameConfig = gameConfig,
             scoreDao = scoreDao,
             onDismiss = { selectedScoreRecord = null },
-            onChartDetails = { selectedScoreRecord = null }
-        )
-    }
-}
-
-@Composable
-fun DifficultyBadge(name: String, value: String) {
-    val badgeText = remember(name, value) {
-        val n = name.trim().takeIf { it.isNotBlank() && it != "Unknown" }
-        val v = value.trim().takeIf { it.isNotBlank() && it != "0" && it != "0.0" }
-        
-        when {
-            n != null && v != null -> "$n $v"
-            n != null -> n
-            v != null -> v
-            else -> ""
-        }
-    }
-    
-    if (badgeText.isNotBlank()) {
-        Surface(
-            color = MaterialTheme.colorScheme.primaryContainer,
-            shape = RoundedCornerShape(4.dp)
-        ) {
-            Text(
-                text = badgeText,
-                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                fontSize = 11.sp
-            )
-        }
-    }
-}
-
-@Composable
-fun GraphPlaceholder(label: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(150.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "PLACEHOLDER",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.ExtraBold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
-            )
-        }
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            modifier = Modifier.padding(top = 4.dp),
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            onChartDetails = { selectedScoreRecord = null },
+            onGameDetails = {
+                selectedScoreRecord = null
+                onGameClick(configId)
+            }
         )
     }
 }

@@ -38,6 +38,11 @@ data class TopScoreItem(
     val maxCombo: Int,
     val playRank: String,
     val gameName: String,
+    val totalScore: Long = 0,
+    val playCount: Int = 0,
+    val booleanLabels: List<String> = emptyList(),
+    val showRank: Boolean = true,
+    val showIcon: Boolean = true,
     val displayIconUri: String? = null,
     val iconRes: Int? = null
 )
@@ -202,46 +207,48 @@ fun ScoreListItem(score: TopScoreItem, selectedSort: String = "Accuracy", onClic
             .clickable(onClick = onClick)
             .padding(4.dp)
     ) {
-        Box(
-            modifier = Modifier
-                .size(56.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-        ) {
-            if (score.displayIconUri != null) {
-                AsyncImage(
-                    model = score.displayIconUri,
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-            } else if (score.iconRes != null) {
-                Image(
-                    painter = painterResource(id = score.iconRes),
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-            } else {
-                Image(
-                    painter = painterResource(id = R.drawable.ohnoes),
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(28.dp)
-                        .align(Alignment.Center),
-                    alpha = 0.5f
-                )
+        if (score.showIcon) {
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+            ) {
+                if (score.displayIconUri != null) {
+                    AsyncImage(
+                        model = score.displayIconUri,
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else if (score.iconRes != null) {
+                    Image(
+                        painter = painterResource(id = score.iconRes),
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Image(
+                        painter = painterResource(id = R.drawable.ohnoes),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .size(28.dp)
+                            .align(Alignment.Center),
+                        alpha = 0.5f
+                    )
+                }
             }
-        }
 
-        Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(12.dp))
+        }
 
         Column(modifier = Modifier.weight(1f)) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                if (score.playRank.isNotBlank()) {
+                if (score.showRank && score.playRank.isNotBlank()) {
                     Surface(
                         color = MaterialTheme.colorScheme.primaryContainer,
                         shape = RoundedCornerShape(4.dp)
@@ -284,10 +291,37 @@ fun ScoreListItem(score: TopScoreItem, selectedSort: String = "Accuracy", onClic
                     }
                 }
             }
-            val statsText = if (selectedSort == "Accuracy") {
-                "${"%.2f".format(score.accuracy)}% Accuracy"
-            } else {
-                "${score.maxCombo}x Max Combo"
+
+            if (score.booleanLabels.isNotEmpty()) {
+                Row(
+                    modifier = Modifier.padding(top = 2.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    score.booleanLabels.forEach { label ->
+                        Surface(
+                            color = MaterialTheme.colorScheme.secondaryContainer,
+                            shape = RoundedCornerShape(4.dp)
+                        ) {
+                            Text(
+                                text = label,
+                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                fontSize = 10.sp
+                            )
+                        }
+                    }
+                }
+            }
+
+            val statsText = when (selectedSort) {
+                "Accuracy" -> "${"%.2f".format(score.accuracy)}% Accuracy"
+                "Max Combo" -> "${score.maxCombo}x Max Combo"
+                "Score" -> "${"%,d".format(score.totalScore)} Score"
+                "Plays" -> "${score.playCount} plays"
+                else -> "${"%.2f".format(score.accuracy)}% Accuracy"
             }
             Text(
                 text = "${score.difficultyVal} - $statsText",
