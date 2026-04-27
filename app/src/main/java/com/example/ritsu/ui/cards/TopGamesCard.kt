@@ -27,6 +27,7 @@ data class TopGameItem(
     val rank: Int,
     val gameName: String,
     val playCount: Int,
+    val configId: Long = 0,
     val achievements: List<Pair<String, Int>> = emptyList(),
     val displayIconUri: String? = null,
     val iconRes: Int? = null

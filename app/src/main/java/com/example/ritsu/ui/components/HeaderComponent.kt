@@ -1,11 +1,14 @@
 package com.example.ritsu.ui.components
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -15,39 +18,55 @@ import com.example.ritsu.Screen
 @Composable
 fun HeaderComponent(
     currentScreen: Screen,
+    subtitle: String? = null,
     onActionClick: () -> Unit = {},
 ) {
     TopAppBar(
         title = {
-            Text(
-                text = when (currentScreen) {
-                    Screen.Score -> "Scores"
-                    Screen.Data -> "Data"
-                    Screen.Options -> "Options"
-                    Screen.ManageConfigs -> "Manage Configs"
-                    Screen.Debug -> "Debug"
-                    Screen.BoxEditor -> "Box Editor"
-                    Screen.Theme -> "Theme"
-                    Screen.ChartDetails -> "Chart Details"
-                    Screen.GameDetails -> "Game Details"
+            Column {
+                Text(
+                    text = when (currentScreen) {
+                        Screen.Score -> "Scores"
+                        Screen.Data -> "Data"
+                        Screen.Options -> "Options"
+                        Screen.ManageConfigs -> "Manage Configs"
+                        Screen.Debug -> "Debug"
+                        Screen.BoxEditor -> "Box Editor"
+                        Screen.Theme -> "Theme"
+                        Screen.ChartDetails -> "Chart Details"
+                        Screen.GameDetails -> "Game Details"
+                        Screen.TopGames -> "Top Games"
+                        Screen.TopCharts -> "Top Charts"
+                        Screen.TopScores -> "Top Scores"
+                    }
+                )
+                if (subtitle != null) {
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
                 }
-            )
+            }
+        },
+        navigationIcon = {
+            if (currentScreen != Screen.Score && currentScreen != Screen.Data) {
+                IconButton(onClick = onActionClick) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowBack,
+                        contentDescription = "Back"
+                    )
+                }
+            }
         },
         actions = {
-            val icon = when (currentScreen) {
-                Screen.Score, Screen.Data -> Icons.Default.Settings
-                else -> Icons.Default.Close
-            }
-            val contentDescription = when (currentScreen) {
-                Screen.Score, Screen.Data -> "Options"
-                else -> "Close"
-            }
-            
-            IconButton(onClick = onActionClick) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = contentDescription
-                )
+            if (currentScreen == Screen.Score || currentScreen == Screen.Data) {
+                IconButton(onClick = onActionClick) {
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = "Options"
+                    )
+                }
             }
         }
     )

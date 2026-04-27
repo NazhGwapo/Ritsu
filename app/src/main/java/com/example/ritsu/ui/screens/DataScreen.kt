@@ -178,6 +178,7 @@ fun DataScreen(
                     rank = 0,
                     gameName = config?.gameName ?: "Unknown",
                     playCount = groupScores.size,
+                    configId = configId,
                     achievements = achievementList,
                     displayIconUri = config?.displayIconUri
                 )
@@ -450,7 +451,15 @@ fun DataScreen(
                         games = topGames,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 8.dp)
+                            .padding(horizontal = 8.dp),
+                        onCardClick = { 
+                            val encodedOption = android.net.Uri.encode(selectedOption)
+                            navController.navigate(com.example.ritsu.Screen.TopGames.name + "/$selectedRange/$encodedOption") 
+                        },
+                        onMoreClick = { 
+                            val encodedOption = android.net.Uri.encode(selectedOption)
+                            navController.navigate(com.example.ritsu.Screen.TopGames.name + "/$selectedRange/$encodedOption") 
+                        }
                     )
                 }
                 
@@ -460,6 +469,14 @@ fun DataScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 8.dp),
+                        onCardClick = { 
+                            val encodedOption = android.net.Uri.encode(selectedOption)
+                            navController.navigate(com.example.ritsu.Screen.TopCharts.name + "/$selectedRange/$encodedOption") 
+                        },
+                        onMoreClick = { 
+                            val encodedOption = android.net.Uri.encode(selectedOption)
+                            navController.navigate(com.example.ritsu.Screen.TopCharts.name + "/$selectedRange/$encodedOption") 
+                        },
                         onChartClick = { chart ->
                             val encodedTitle = android.net.Uri.encode(chart.songTitle)
                             val encodedDiffName = android.net.Uri.encode(chart.difficultyName)
@@ -477,6 +494,16 @@ fun DataScreen(
                         availableGames = configs.map { it.gameName }.distinct(),
                         selectedGame = topScoresGameFilter,
                         onGameChange = { topScoresGameFilter = it },
+                        onCardClick = { 
+                            val encodedOption = android.net.Uri.encode(selectedOption)
+                            val encodedGameFilter = android.net.Uri.encode(topScoresGameFilter)
+                            navController.navigate(com.example.ritsu.Screen.TopScores.name + "/$selectedRange/$encodedOption/$topScoresSortMode/$encodedGameFilter") 
+                        },
+                        onMoreClick = { 
+                            val encodedOption = android.net.Uri.encode(selectedOption)
+                            val encodedGameFilter = android.net.Uri.encode(topScoresGameFilter)
+                            navController.navigate(com.example.ritsu.Screen.TopScores.name + "/$selectedRange/$encodedOption/$topScoresSortMode/$encodedGameFilter") 
+                        },
                         onScoreClick = { item ->
                             selectedScoreForDetails = filteredScores.find { it.genericScore.id == item.scoreId }
                         },

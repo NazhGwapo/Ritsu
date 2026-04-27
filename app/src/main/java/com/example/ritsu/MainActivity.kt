@@ -36,6 +36,16 @@ import com.example.ritsu.ui.screens.ChartDetailsScreen
 import com.example.ritsu.ui.screens.GameDetailsScreen
 import com.example.ritsu.ui.components.HeaderComponent
 import com.example.ritsu.ui.components.NavigationComponent
+import com.example.ritsu.ui.screens.TopGamesScreen
+import com.example.ritsu.ui.screens.TopChartsScreen
+import com.example.ritsu.ui.screens.TopScoresScreen
+import com.example.ritsu.ui.cards.TopGameItem
+import com.example.ritsu.ui.cards.TopChartItem
+import com.example.ritsu.ui.cards.TopScoreItem
+import com.example.ritsu.data.FullScoreRecord
+import com.example.ritsu.data.RitsuDatabase
+import com.example.ritsu.ui.components.ScoreDetailsDialog
+import kotlinx.serialization.json.Json
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.navigation.compose.NavHost
@@ -62,7 +72,10 @@ enum class Screen {
     BoxEditor,
     Theme,
     ChartDetails,
-    GameDetails
+    GameDetails,
+    TopGames,
+    TopCharts,
+    TopScores
 }
 
 class MainActivity : ComponentActivity() {
@@ -150,7 +163,20 @@ fun MainContent(themeRepository: ThemeRepository) {
         navBackStackEntry?.destination?.route?.startsWith(Screen.Theme.name) == true -> Screen.Theme
         navBackStackEntry?.destination?.route?.startsWith(Screen.ChartDetails.name) == true -> Screen.ChartDetails
         navBackStackEntry?.destination?.route?.startsWith(Screen.GameDetails.name) == true -> Screen.GameDetails
+        navBackStackEntry?.destination?.route?.startsWith(Screen.TopGames.name) == true -> Screen.TopGames
+        navBackStackEntry?.destination?.route?.startsWith(Screen.TopCharts.name) == true -> Screen.TopCharts
+        navBackStackEntry?.destination?.route?.startsWith(Screen.TopScores.name) == true -> Screen.TopScores
         else -> Screen.Score
+    }
+
+    val subtitle = when (currentScreen) {
+        Screen.TopGames, Screen.TopCharts -> navBackStackEntry?.arguments?.getString("option")
+        Screen.TopScores -> {
+            val opt = navBackStackEntry?.arguments?.getString("option")
+            val sort = navBackStackEntry?.arguments?.getString("sortMode")
+            if (opt != null && sort != null) "$opt ($sort)" else opt
+        }
+        else -> null
     }
 
     var scoreScrollToTopSignal by remember { mutableStateOf(0L) }
@@ -160,6 +186,7 @@ fun MainContent(themeRepository: ThemeRepository) {
         topBar = {
             HeaderComponent(
                 currentScreen = currentScreen,
+                subtitle = subtitle,
                 onActionClick = {
                     when (currentScreen) {
                         Screen.Score, Screen.Data -> navController.navigate(Screen.Options.name)
@@ -254,8 +281,7 @@ fun MainContent(themeRepository: ThemeRepository) {
                     onBack = { navController.popBackStack() }
                 )
             }
-            composable(
-                route = Screen.GameDetails.name + "/{configId}",
+            composable(Screen.GameDetails.name + "/{configId}",
                 arguments = listOf(navArgument("configId") { type = NavType.LongType })
             ) { backStackEntry ->
                 val configId = backStackEntry.arguments?.getLong("configId") ?: 0L
@@ -264,8 +290,349 @@ fun MainContent(themeRepository: ThemeRepository) {
                     onBack = { navController.popBackStack() }
                 )
             }
+            composable(Screen.TopGames.name + "/{range}/{option}") { backStackEntry ->
+                val range = backStackEntry.arguments?.getString("range") ?: "Month"
+                val option = backStackEntry.arguments?.getString("option") ?: ""
+                
+                val context = LocalContext.current
+                val database = remember { RitsuDatabase.getDatabase(context) }
+                val scores by database.scoreDao().getAllScores().collectAsState(initial = emptyList())
+                val configs by database.scoreDao().getAllConfigs().collectAsState(initial = emptyList())
+                val json = remember { Json { ignoreUnknownKeys = true } }
+
+                val filteredScores = remember(scores, range, option) {
+                    val currentScores = scores ?: return@remember emptyList<FullScoreRecord>()
+                    val sdfDay = java.text.SimpleDateFormat("MMM d, yyyy", java.util.Locale.getDefault())
+                    val sdfMonth = java.text.SimpleDateFormat("MMMM yyyy", java.util.Locale.getDefault())
+                    
+                    currentScores.filter { record ->
+                        val playDate = java.util.Date(record.genericScore.playTimestamp)
+                        val playCalendar = java.util.Calendar.getInstance().apply { time = playDate }
+                        
+                        when (range) {
+                            "Day" -> {
+                                when (option) {
+                                    "Today" -> isSameDay(playCalendar, java.util.Calendar.getInstance())
+                                    "Yesterday" -> {
+                                        val yesterday = java.util.Calendar.getInstance().apply { add(java.util.Calendar.DAY_OF_YEAR, -1) }
+                                        isSameDay(playCalendar, yesterday)
+                                    }
+                                    else -> sdfDay.format(playDate) == option
+                                }
+                            }
+                            "Week" -> {
+                                val weekRange = option.split(" - ")
+                                if (weekRange.size == 2) {
+                                    try {
+                                        val start = sdfDay.parse(weekRange[0])
+                                        val end = sdfDay.parse(weekRange[1])
+                                        if (start != null && end != null) {
+                                            playDate.after(start) && playDate.before(java.util.Date(end.time + 86400000))
+                                        } else false
+                                    } catch (e: Exception) { false }
+                                } else if (option == "This Week") {
+                                    val startOfWeek = java.util.Calendar.getInstance().apply { 
+                                        set(java.util.Calendar.DAY_OF_WEEK, java.util.Calendar.MONDAY)
+                                        set(java.util.Calendar.HOUR_OF_DAY, 0)
+                                        set(java.util.Calendar.MINUTE, 0)
+                                        set(java.util.Calendar.SECOND, 0)
+                                    }
+                                    playDate.after(startOfWeek.time)
+                                } else false
+                            }
+                            "Month" -> sdfMonth.format(playDate) == option
+                            "Year" -> playCalendar[java.util.Calendar.YEAR].toString() == option
+                            "All Time" -> true
+                            else -> false
+                        }
+                    }
+                }
+
+                val topGames = remember(filteredScores, configs) {
+                    filteredScores.groupBy { it.genericScore.configId }
+                        .map { (configId, groupScores) ->
+                            val config = configs.find { it.id == configId }
+                            val booleanFields = config?.let {
+                                try {
+                                    json.decodeFromString<com.example.ritsu.data.GameConfigData>(it.configData).allFieldsWithCategory
+                                        .filter { (field, _) -> field.type == "boolean" }
+                                        .map { (field, _) -> field.key to field.label }
+                                } catch (e: Exception) { emptyList<Pair<String, String>>() }
+                            } ?: emptyList()
+
+                            val achievementList = booleanFields.mapNotNull { (key, label) ->
+                                val count = groupScores.sumOf { record ->
+                                    record.details.count { it.key == key && it.value == "true" }
+                                }
+                                if (count > 0) label to count else null
+                            }
+
+                            TopGameItem(
+                                rank = 0,
+                                gameName = config?.gameName ?: "Unknown",
+                                playCount = groupScores.size,
+                                configId = configId,
+                                achievements = achievementList,
+                                displayIconUri = config?.displayIconUri
+                            )
+                        }
+                        .sortedByDescending { it.playCount }
+                        .mapIndexed { index, item -> item.copy(rank = index + 1) }
+                }
+
+                TopGamesScreen(
+                    topGames = topGames,
+                    onGameClick = { game ->
+                        navController.navigate(Screen.GameDetails.name + "/${game.configId}")
+                    }
+                )
+            }
+            composable(Screen.TopCharts.name + "/{range}/{option}") { backStackEntry ->
+                val range = backStackEntry.arguments?.getString("range") ?: "Month"
+                val option = backStackEntry.arguments?.getString("option") ?: ""
+                
+                val context = LocalContext.current
+                val database = remember { RitsuDatabase.getDatabase(context) }
+                val scores by database.scoreDao().getAllScores().collectAsState(initial = emptyList())
+                val configs by database.scoreDao().getAllConfigs().collectAsState(initial = emptyList())
+                val json = remember { Json { ignoreUnknownKeys = true } }
+
+                val filteredScores = remember(scores, range, option) {
+                    val currentScores = scores ?: return@remember emptyList<FullScoreRecord>()
+                    val sdfDay = java.text.SimpleDateFormat("MMM d, yyyy", java.util.Locale.getDefault())
+                    val sdfMonth = java.text.SimpleDateFormat("MMMM yyyy", java.util.Locale.getDefault())
+                    
+                    currentScores.filter { record ->
+                        val playDate = java.util.Date(record.genericScore.playTimestamp)
+                        val playCalendar = java.util.Calendar.getInstance().apply { time = playDate }
+                        
+                        when (range) {
+                            "Day" -> {
+                                when (option) {
+                                    "Today" -> isSameDay(playCalendar, java.util.Calendar.getInstance())
+                                    "Yesterday" -> {
+                                        val yesterday = java.util.Calendar.getInstance().apply { add(java.util.Calendar.DAY_OF_YEAR, -1) }
+                                        isSameDay(playCalendar, yesterday)
+                                    }
+                                    else -> sdfDay.format(playDate) == option
+                                }
+                            }
+                            "Week" -> {
+                                val weekRange = option.split(" - ")
+                                if (weekRange.size == 2) {
+                                    try {
+                                        val start = sdfDay.parse(weekRange[0])
+                                        val end = sdfDay.parse(weekRange[1])
+                                        if (start != null && end != null) {
+                                            playDate.after(start) && playDate.before(java.util.Date(end.time + 86400000))
+                                        } else false
+                                    } catch (e: Exception) { false }
+                                } else if (option == "This Week") {
+                                    val startOfWeek = java.util.Calendar.getInstance().apply { 
+                                        set(java.util.Calendar.DAY_OF_WEEK, java.util.Calendar.MONDAY)
+                                        set(java.util.Calendar.HOUR_OF_DAY, 0)
+                                        set(java.util.Calendar.MINUTE, 0)
+                                        set(java.util.Calendar.SECOND, 0)
+                                    }
+                                    playDate.after(startOfWeek.time)
+                                } else false
+                            }
+                            "Month" -> sdfMonth.format(playDate) == option
+                            "Year" -> playCalendar[java.util.Calendar.YEAR].toString() == option
+                            "All Time" -> true
+                            else -> false
+                        }
+                    }
+                }
+
+                val topCharts = remember(filteredScores, configs) {
+                    filteredScores.groupBy { "${it.genericScore.configId}|${it.genericScore.songTitle}|${it.genericScore.difficultyName}|${it.genericScore.difficultyVal}" }
+                        .map { (key, groupScores) ->
+                            val configId = key.split("|").first().toLong()
+                            val config = configs.find { it.id == configId }
+                            val first = groupScores.first().genericScore
+
+                            val booleanFields = config?.let {
+                                try {
+                                    json.decodeFromString<com.example.ritsu.data.GameConfigData>(it.configData).allFieldsWithCategory
+                                        .filter { (field, _) -> field.type == "boolean" }
+                                        .map { (field, _) -> field.key to field.label }
+                                } catch (e: Exception) { emptyList<Pair<String, String>>() }
+                            } ?: emptyList()
+
+                            val achievementList = booleanFields.mapNotNull { (fieldKey, label) ->
+                                val count = groupScores.sumOf { record ->
+                                    record.details.count { it.key == fieldKey && it.value == "true" }
+                                }
+                                if (count > 0) label to count else null
+                            }
+
+                            TopChartItem(
+                                rank = 0,
+                                songTitle = first.songTitle,
+                                playCount = groupScores.size,
+                                configId = configId,
+                                difficultyName = first.difficultyName,
+                                difficultyVal = first.difficultyVal,
+                                achievements = achievementList,
+                                displayIconUri = config?.displayIconUri
+                            )
+                        }
+                        .sortedByDescending { it.playCount }
+                        .mapIndexed { index, item -> item.copy(rank = index + 1) }
+                }
+
+                TopChartsScreen(
+                    topCharts = topCharts,
+                    onChartClick = { chart ->
+                        val encodedTitle = android.net.Uri.encode(chart.songTitle)
+                        val encodedDiffName = android.net.Uri.encode(chart.difficultyName)
+                        val encodedDiffVal = android.net.Uri.encode(chart.difficultyVal)
+                        navController.navigate(Screen.ChartDetails.name + "/${chart.configId}/$encodedTitle/$encodedDiffName/$encodedDiffVal")
+                    }
+                )
+            }
+            composable(Screen.TopScores.name + "/{range}/{option}/{sortMode}/{gameFilter}") { backStackEntry ->
+                val range = backStackEntry.arguments?.getString("range") ?: "Month"
+                val option = backStackEntry.arguments?.getString("option") ?: ""
+                val sortMode = backStackEntry.arguments?.getString("sortMode") ?: "Accuracy"
+                val gameFilter = backStackEntry.arguments?.getString("gameFilter") ?: "All"
+                
+                val context = LocalContext.current
+                val database = remember { RitsuDatabase.getDatabase(context) }
+                val scores by database.scoreDao().getAllScores().collectAsState(initial = emptyList())
+                val configs by database.scoreDao().getAllConfigs().collectAsState(initial = emptyList())
+                val json = remember { Json { ignoreUnknownKeys = true } }
+
+                val filteredScores = remember(scores, range, option) {
+                    val currentScores = scores ?: return@remember emptyList<FullScoreRecord>()
+                    val sdfDay = java.text.SimpleDateFormat("MMM d, yyyy", java.util.Locale.getDefault())
+                    val sdfMonth = java.text.SimpleDateFormat("MMMM yyyy", java.util.Locale.getDefault())
+                    
+                    currentScores.filter { record ->
+                        val playDate = java.util.Date(record.genericScore.playTimestamp)
+                        val playCalendar = java.util.Calendar.getInstance().apply { time = playDate }
+                        
+                        when (range) {
+                            "Day" -> {
+                                when (option) {
+                                    "Today" -> isSameDay(playCalendar, java.util.Calendar.getInstance())
+                                    "Yesterday" -> {
+                                        val yesterday = java.util.Calendar.getInstance().apply { add(java.util.Calendar.DAY_OF_YEAR, -1) }
+                                        isSameDay(playCalendar, yesterday)
+                                    }
+                                    else -> sdfDay.format(playDate) == option
+                                }
+                            }
+                            "Week" -> {
+                                val weekRange = option.split(" - ")
+                                if (weekRange.size == 2) {
+                                    try {
+                                        val start = sdfDay.parse(weekRange[0])
+                                        val end = sdfDay.parse(weekRange[1])
+                                        if (start != null && end != null) {
+                                            playDate.after(start) && playDate.before(java.util.Date(end.time + 86400000))
+                                        } else false
+                                    } catch (e: Exception) { false }
+                                } else if (option == "This Week") {
+                                    val startOfWeek = java.util.Calendar.getInstance().apply { 
+                                        set(java.util.Calendar.DAY_OF_WEEK, java.util.Calendar.MONDAY)
+                                        set(java.util.Calendar.HOUR_OF_DAY, 0)
+                                        set(java.util.Calendar.MINUTE, 0)
+                                        set(java.util.Calendar.SECOND, 0)
+                                    }
+                                    playDate.after(startOfWeek.time)
+                                } else false
+                            }
+                            "Month" -> sdfMonth.format(playDate) == option
+                            "Year" -> playCalendar[java.util.Calendar.YEAR].toString() == option
+                            "All Time" -> true
+                            else -> false
+                        }
+                    }
+                }
+
+                val topScores = remember(filteredScores, configs, sortMode, gameFilter) {
+                    filteredScores
+                        .filter { record ->
+                            if (gameFilter == "All") true
+                            else {
+                                val config = configs.find { it.id == record.genericScore.configId }
+                                config?.gameName == gameFilter
+                            }
+                        }
+                        .map { record ->
+                            val config = configs.find { it.id == record.genericScore.configId }
+                            val totalNoteCount = if (config != null) {
+                                try {
+                                    json.decodeFromString<com.example.ritsu.data.GameConfigData>(config.configData)
+                                        .let { com.example.ritsu.data.AccuracyCalculator.getTotalNoteCount(record.details, it) }
+                                } catch (e: Exception) { 0 }
+                            } else 0
+                            
+                            val weight = totalNoteCount.coerceAtLeast(1).toDouble()
+                            val rankingValue = if (sortMode == "Accuracy") {
+                                weight * record.genericScore.accuracy
+                            } else {
+                                weight * record.genericScore.maxCombo
+                            }
+                            Pair(record, rankingValue)
+                        }
+                        .sortedByDescending { it.second }
+                        .mapIndexed { index, (record, _) ->
+                            val config = configs.find { it.id == record.genericScore.configId }
+                            TopScoreItem(
+                                scoreId = record.genericScore.id,
+                                rank = index + 1,
+                                songTitle = record.genericScore.songTitle,
+                                difficultyName = record.genericScore.difficultyName,
+                                difficultyVal = record.genericScore.difficultyVal,
+                                accuracy = record.genericScore.accuracy,
+                                maxCombo = record.genericScore.maxCombo,
+                                playRank = record.genericScore.playRank,
+                                gameName = config?.gameName ?: "Unknown",
+                                displayIconUri = config?.displayIconUri
+                            )
+                        }
+                }
+
+                var selectedScoreForDetails by remember { mutableStateOf<FullScoreRecord?>(null) }
+
+                TopScoresScreen(
+                    sortMode = sortMode,
+                    topScores = topScores,
+                    onScoreClick = { item ->
+                        selectedScoreForDetails = filteredScores.find { it.genericScore.id == item.scoreId }
+                    }
+                )
+
+                if (selectedScoreForDetails != null) {
+                    val config = configs.find { it.id == selectedScoreForDetails!!.genericScore.configId }
+                    if (config != null) {
+                        ScoreDetailsDialog(
+                            scoreRecord = selectedScoreForDetails!!,
+                            gameConfig = config,
+                            scoreDao = database.scoreDao(),
+                            onDismiss = { selectedScoreForDetails = null },
+                            onChartDetails = {
+                                val s = selectedScoreForDetails!!.genericScore
+                                val encodedTitle = android.net.Uri.encode(s.songTitle)
+                                val encodedDiffName = android.net.Uri.encode(s.difficultyName)
+                                val encodedDiffVal = android.net.Uri.encode(s.difficultyVal)
+                                selectedScoreForDetails = null
+                                navController.navigate(Screen.ChartDetails.name + "/${s.configId}/$encodedTitle/$encodedDiffName/$encodedDiffVal")
+                            }
+                        )
+                    }
+                }
+            }
         }
     }
+}
+
+private fun isSameDay(cal1: java.util.Calendar, cal2: java.util.Calendar): Boolean {
+    return cal1[java.util.Calendar.YEAR] == cal2[java.util.Calendar.YEAR] &&
+            cal1[java.util.Calendar.DAY_OF_YEAR] == cal2[java.util.Calendar.DAY_OF_YEAR]
 }
 
 @Composable
