@@ -49,6 +49,7 @@ fun FieldEditorDialog(
     var threshold by remember { mutableStateOf(field.threshold) }
     var targetColor by remember { mutableStateOf(field.targetColor) }
     var weight by remember { mutableStateOf(field.weight?.toString() ?: "") }
+    var shortLabel by remember { mutableStateOf(field.shortLabel ?: "") }
     var newCategory by remember { mutableStateOf(category) }
 
     var hexString by remember(targetColor) {
@@ -88,6 +89,14 @@ fun FieldEditorDialog(
                 }
 
                 if (type == "boolean") {
+                    OutlinedTextField(
+                        value = shortLabel,
+                        onValueChange = { shortLabel = it },
+                        label = { Text("Achievement Abbreviation (e.g., FC)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = { Text("Leave blank for automatic") }
+                    )
+
                     HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                     Text("Boolean Detection Settings", style = MaterialTheme.typography.titleSmall)
                     
@@ -150,7 +159,8 @@ fun FieldEditorDialog(
                     type = type,
                     threshold = threshold,
                     targetColor = targetColor,
-                    weight = weight.toDoubleOrNull()
+                    weight = weight.toDoubleOrNull(),
+                    shortLabel = shortLabel.takeIf { it.isNotBlank() }
                 )
                 val dataWithUpdatedField = configData.updateField(category, index, updatedField)
                 val finalData = if (newCategory != category) {

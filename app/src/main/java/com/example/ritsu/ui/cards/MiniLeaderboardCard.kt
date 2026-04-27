@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -32,6 +33,7 @@ fun MiniLeaderboardCard(
     modifier: Modifier = Modifier,
     isHighlighted: Boolean = false,
     displayValue: String? = null,
+    booleanLabels: List<String> = emptyList(),
     onClick: () -> Unit = {}
 ) {
     val backgroundColor = if (isHighlighted) {
@@ -66,12 +68,36 @@ fun MiniLeaderboardCard(
 
         Spacer(modifier = Modifier.width(8.dp))
 
-        Text(
-            text = displayValue ?: "${score.playRank} - ${"%,d".format(score.totalScore)}",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.weight(1f)
-        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = displayValue ?: "${score.playRank} - ${"%,d".format(score.totalScore)}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            
+            if (booleanLabels.isNotEmpty()) {
+                Row(
+                    modifier = Modifier.padding(top = 2.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    booleanLabels.forEach { label ->
+                        Surface(
+                            color = MaterialTheme.colorScheme.secondaryContainer,
+                            shape = RoundedCornerShape(4.dp)
+                        ) {
+                            Text(
+                                text = label,
+                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Black,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                fontSize = 8.sp
+                            )
+                        }
+                    }
+                }
+            }
+        }
 
         val timeInfo = remember(score.playTimestamp) {
             val relativeTime = DateUtils.getRelativeTimeSpanString(

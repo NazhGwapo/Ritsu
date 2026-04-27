@@ -32,6 +32,7 @@ import com.example.ritsu.ui.screens.OptionsScreen
 import com.example.ritsu.ui.screens.ManageConfigsScreen
 import com.example.ritsu.ui.screens.DebugScreen
 import com.example.ritsu.ui.screens.BoxEditorScreen
+import com.example.ritsu.ui.screens.ChartDetailsScreen
 import com.example.ritsu.ui.components.HeaderComponent
 import com.example.ritsu.ui.components.NavigationComponent
 import androidx.compose.animation.fadeIn
@@ -40,6 +41,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import kotlinx.coroutines.delay
 
@@ -56,7 +59,8 @@ enum class Screen {
     ManageConfigs,
     Debug,
     BoxEditor,
-    Theme
+    Theme,
+    ChartDetails
 }
 
 class MainActivity : ComponentActivity() {
@@ -135,13 +139,14 @@ fun MainContent(themeRepository: ThemeRepository) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
 
-    val currentScreen = when (navBackStackEntry?.destination?.route) {
-        Screen.Data.name -> Screen.Data
-        Screen.Options.name -> Screen.Options
-        Screen.ManageConfigs.name -> Screen.ManageConfigs
-        Screen.Debug.name -> Screen.Debug
-        Screen.BoxEditor.name -> Screen.BoxEditor
-        Screen.Theme.name -> Screen.Theme
+    val currentScreen = when {
+        navBackStackEntry?.destination?.route?.startsWith(Screen.Data.name) == true -> Screen.Data
+        navBackStackEntry?.destination?.route?.startsWith(Screen.Options.name) == true -> Screen.Options
+        navBackStackEntry?.destination?.route?.startsWith(Screen.ManageConfigs.name) == true -> Screen.ManageConfigs
+        navBackStackEntry?.destination?.route?.startsWith(Screen.Debug.name) == true -> Screen.Debug
+        navBackStackEntry?.destination?.route?.startsWith(Screen.BoxEditor.name) == true -> Screen.BoxEditor
+        navBackStackEntry?.destination?.route?.startsWith(Screen.Theme.name) == true -> Screen.Theme
+        navBackStackEntry?.destination?.route?.startsWith(Screen.ChartDetails.name) == true -> Screen.ChartDetails
         else -> Screen.Score
     }
 
@@ -190,7 +195,12 @@ fun MainContent(themeRepository: ThemeRepository) {
             popEnterTransition = { fadeIn(animationSpec = tween(200)) },
             popExitTransition = { fadeOut(animationSpec = tween(200)) }
         ) {
-            composable(Screen.Score.name) { ScoreScreen(scrollToTopSignal = scoreScrollToTopSignal) }
+            composable(Screen.Score.name) { 
+                ScoreScreen(
+                    navController = navController,
+                    scrollToTopSignal = scoreScrollToTopSignal
+                ) 
+            }
             composable(Screen.Data.name) { DataScreen() }
             composable(Screen.Options.name) {
                 OptionsScreen(
@@ -207,6 +217,38 @@ fun MainContent(themeRepository: ThemeRepository) {
             composable(Screen.Debug.name) { DebugScreen() }
             composable(Screen.BoxEditor.name) { BoxEditorScreen() }
             composable(Screen.Theme.name) { ThemeScreen(themeRepository) }
+            composable(
+                route = Screen.ChartDetails.name + "/{configId}/{songTitle}/{difficultyName}/{difficultyVal}",
+                arguments = listOf(
+                    navArgument("configId") { type = NavType.LongType },
+                    navArgument("songTitle") { type = NavType.StringType },
+                    navArgument("difficultyName") { type = NavType.StringType },
+                    navArgument("difficultyVal") { type = NavType.StringType }
+                )
+            ) { backStackEntry ->
+                val configId = backStackEntry.arguments?.getLong("configId") ?: 0L
+                val songTitle = backStackEntry.arguments?.getString("songTitle") ?: ""
+                val difficultyName = backStackEntry.arguments?.getString("difficultyName") ?: ""
+                val difficultyVal = backStackEntry.arguments?.getString("difficultyVal") ?: ""
+                ChartDetailsScreen(
+                    configId = configId,
+                    songTitle = songTitle,
+                    difficultyName = difficultyName,
+                    difficultyVal = difficultyVal,
+                    onDifficultyClick = { cid, title, dName, dVal ->
+                        val encodedTitle = android.net.Uri.encode(title)
+                        val encodedDName = android.net.Uri.encode(dName)
+                        val encodedDVal = android.net.Uri.encode(dVal)
+                        navController.navigate(Screen.ChartDetails.name + "/$cid/$encodedTitle/$encodedDName/$encodedDVal") {
+                            // Pop up to the chart details screen to "swap" rather than stack indefinitely
+                            popUpTo(Screen.ChartDetails.name + "/{configId}/{songTitle}/{difficultyName}/{difficultyVal}") {
+                                inclusive = true
+                            }
+                        }
+                    },
+                    onBack = { navController.popBackStack() }
+                )
+            }
         }
     }
 }

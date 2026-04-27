@@ -148,6 +148,9 @@ interface ScoreDao {
 
     @Query("SELECT COUNT(*) FROM generic_scores WHERE configId = :configId AND songTitle = :songTitle AND difficultyName = :difficultyName AND difficultyVal = :difficultyVal")
     fun getTrackCountForChart(configId: Long, songTitle: String, difficultyName: String, difficultyVal: String): Flow<Int>
+
+    @Query("SELECT * FROM generic_scores WHERE configId = :configId AND songTitle = :songTitle GROUP BY difficultyName, difficultyVal")
+    fun getUniqueChartsForSong(configId: Long, songTitle: String): Flow<List<GenericScore>>
 }
 
 // --- 4. THE DATABASE ---

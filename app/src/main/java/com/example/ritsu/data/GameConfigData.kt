@@ -18,7 +18,8 @@ data class ConfigField(
     val ocrRect: OcrRect? = null,
     val targetColor: Int? = null, // ARGB color to detect if type is "boolean"
     val threshold: Float = 0.1f,    // Threshold for color matching (0.0 - 1.0)
-    val weight: Double? = null      // Weight for accuracy calculation (e.g., 1.0 for Perfect)
+    val weight: Double? = null,      // Weight for accuracy calculation (e.g., 1.0 for Perfect)
+    val shortLabel: String? = null  // Shortened label for display in compact views
 )
 
 @Serializable

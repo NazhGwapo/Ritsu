@@ -298,11 +298,31 @@ fun ScoreDetailsDialogContent(
                                             else "${s.maxCombo}x"
                                         }
                                     }
+
+                                    val shortenedBooleanLabels = remember(record, configData) {
+                                        if (configData == null) emptyList<String>() else {
+                                            val booleanFields = configData.allFieldsWithCategory
+                                                .filter { it.first.type == "boolean" }
+                                                .map { it.first }
+                                            
+                                            record.details
+                                                .filter { detail -> 
+                                                    val field = booleanFields.find { it.key == detail.key }
+                                                    field != null && detail.value.lowercase() == "true"
+                                                }
+                                                .map { detail ->
+                                                    val field = booleanFields.find { it.key == detail.key }!!
+                                                    field.shortLabel ?: field.label.split(" ").filter { it.isNotBlank() }.joinToString("") { it.take(1).uppercase() }
+                                                }
+                                        }
+                                    }
+
                                     MiniLeaderboardCard(
                                         rank = index + 1,
                                         score = s,
                                         isHighlighted = s.id == score.id,
                                         displayValue = displayValue,
+                                        booleanLabels = shortenedBooleanLabels,
                                         onClick = { onScoreSelected(record) }
                                     )
                                 }
@@ -395,6 +415,7 @@ fun ScoreDetailsDialogPreview() {
                 override fun getScoresForChart(configId: Long, songTitle: String, difficultyName: String, difficultyVal: String): kotlinx.coroutines.flow.Flow<List<FullScoreRecord>> = flowOf(listOf(dummyRecord, dummyRecord2))
                 override fun getTrackCountForSong(configId: Long, songTitle: String): kotlinx.coroutines.flow.Flow<Int> = flowOf(8)
                 override fun getTrackCountForChart(configId: Long, songTitle: String, difficultyName: String, difficultyVal: String): kotlinx.coroutines.flow.Flow<Int> = flowOf(3)
+                override fun getUniqueChartsForSong(configId: Long, songTitle: String): kotlinx.coroutines.flow.Flow<List<GenericScore>> = flowOf(emptyList())
             },
             onDismiss = {}
         )

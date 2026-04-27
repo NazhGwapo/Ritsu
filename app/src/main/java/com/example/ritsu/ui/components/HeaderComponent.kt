@@ -28,6 +28,7 @@ fun HeaderComponent(
                     Screen.Debug -> "Debug"
                     Screen.BoxEditor -> "Box Editor"
                     Screen.Theme -> "Theme"
+                    Screen.ChartDetails -> "Chart Details"
                 }
             )
         },

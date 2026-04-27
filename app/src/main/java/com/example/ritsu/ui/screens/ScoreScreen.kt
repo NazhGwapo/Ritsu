@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ritsu.R
+import com.example.ritsu.Screen
 import com.example.ritsu.data.FullScoreRecord
 import com.example.ritsu.data.GameConfigData
 import com.example.ritsu.data.RitsuDatabase
@@ -53,6 +54,7 @@ enum class ScoreSortMode {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScoreScreen(
+    navController: androidx.navigation.NavController,
     scrollToTopSignal: Long = 0L,
 ) {
     val context = LocalContext.current
@@ -292,6 +294,16 @@ fun ScoreScreen(
                 onEdit = {
                     selectedScore = null
                     scoreToEdit = record
+                },
+                onChartDetails = {
+                    selectedScore = null
+                    val s = record.genericScore
+                    // Using android.net.Uri.encode ensures spaces are %20, not +
+                    val encodedTitle = android.net.Uri.encode(s.songTitle)
+                    val encodedDiffName = android.net.Uri.encode(s.difficultyName)
+                    val encodedDiffVal = android.net.Uri.encode(s.difficultyVal)
+                    
+                    navController.navigate(Screen.ChartDetails.name + "/${s.configId}/$encodedTitle/$encodedDiffName/$encodedDiffVal")
                 }
             )
         }
