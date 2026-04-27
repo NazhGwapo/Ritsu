@@ -1,0 +1,233 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 6,
+    "identityHash": "42d26eb3a58dbc24973576e834a808f7",
+    "entities": [
+      {
+        "tableName": "game_configs",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `gameName` TEXT NOT NULL, `configData` TEXT NOT NULL, `configVersion` INTEGER NOT NULL, `displayIconUri` TEXT)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "gameName",
+            "columnName": "gameName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "configData",
+            "columnName": "configData",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "configVersion",
+            "columnName": "configVersion",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "displayIconUri",
+            "columnName": "displayIconUri",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_game_configs_gameName",
+            "unique": true,
+            "columnNames": [
+              "gameName"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_game_configs_gameName` ON `${TABLE_NAME}` (`gameName`)"
+          }
+        ]
+      },
+      {
+        "tableName": "generic_scores",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `configId` INTEGER NOT NULL, `songTitle` TEXT NOT NULL, `difficultyName` TEXT NOT NULL, `difficultyVal` TEXT NOT NULL, `difficultySortValue` REAL NOT NULL, `totalScore` INTEGER NOT NULL, `maxCombo` INTEGER NOT NULL, `accuracy` REAL NOT NULL, `playRank` TEXT NOT NULL, `timestamp` INTEGER NOT NULL, FOREIGN KEY(`configId`) REFERENCES `game_configs`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "configId",
+            "columnName": "configId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "songTitle",
+            "columnName": "songTitle",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "difficultyName",
+            "columnName": "difficultyName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "difficultyVal",
+            "columnName": "difficultyVal",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "difficultySortValue",
+            "columnName": "difficultySortValue",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalScore",
+            "columnName": "totalScore",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "maxCombo",
+            "columnName": "maxCombo",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "accuracy",
+            "columnName": "accuracy",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "playRank",
+            "columnName": "playRank",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timestamp",
+            "columnName": "timestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_generic_scores_configId",
+            "unique": false,
+            "columnNames": [
+              "configId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_generic_scores_configId` ON `${TABLE_NAME}` (`configId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "game_configs",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "configId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "score_details",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`detailId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `scoreId` INTEGER NOT NULL, `key` TEXT NOT NULL, `value` TEXT NOT NULL, `category` TEXT NOT NULL, FOREIGN KEY(`scoreId`) REFERENCES `generic_scores`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "detailId",
+            "columnName": "detailId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "scoreId",
+            "columnName": "scoreId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "key",
+            "columnName": "key",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "value",
+            "columnName": "value",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "category",
+            "columnName": "category",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "detailId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_score_details_scoreId",
+            "unique": false,
+            "columnNames": [
+              "scoreId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_score_details_scoreId` ON `${TABLE_NAME}` (`scoreId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "generic_scores",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "scoreId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '42d26eb3a58dbc24973576e834a808f7')"
+    ]
+  }
+}
