@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -99,7 +100,7 @@ fun ActivityGraphCard(
                         // Grid and Bars
                         Canvas(modifier = Modifier
                             .fillMaxSize()
-                            .padding(start = 24.dp)) { // Padding for labels
+                            .padding(start = 28.dp)) { // Slightly more padding for labels
                             val width = size.width
                             val height = size.height
                             
@@ -147,13 +148,12 @@ fun ActivityGraphCard(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 8.dp, start = 24.dp),
+                            .padding(top = 8.dp, start = 28.dp, end = 4.dp), // Match canvas padding and add end padding
                         horizontalArrangement = Arrangement.SpaceAround
                     ) {
                         val labelStep = when {
-                            dataPoints.size > 20 -> 4
-                            dataPoints.size > 10 -> 2
-                            else -> 1
+                            dataPoints.size > 12 -> 6 // Every 6 for Day
+                            else -> 1 // Show all for Week, Month (4), Year (12)
                         }
                         
                         dataPoints.forEachIndexed { index, point ->
@@ -163,7 +163,9 @@ fun ActivityGraphCard(
                                     color = labelColor,
                                     fontSize = 10.sp,
                                     textAlign = TextAlign.Center,
-                                    modifier = Modifier.weight(1f)
+                                    modifier = Modifier.weight(1f, fill = false), // Don't force fill to avoid cutting
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Visible
                                 )
                             } else {
                                 Spacer(modifier = Modifier.weight(1f))

@@ -39,7 +39,7 @@ fun DataScreen() {
     val configs by database.scoreDao().getAllConfigs().collectAsState(initial = emptyList())
     val json = remember { Json { ignoreUnknownKeys = true } }
 
-    val ranges = listOf("Day", "Week", "Month", "Year")
+    val ranges = listOf("Day", "Week", "Month", "Year", "All Time")
     var selectedRange by remember { mutableStateOf("Month") }
     var rangeExpanded by remember { mutableStateOf(false) }
 
@@ -84,6 +84,9 @@ fun DataScreen() {
                 for (i in 0..5) {
                     list.add((year - i).toString())
                 }
+            }
+            "All Time" -> {
+                list.add("Entire History")
             }
         }
         list
@@ -138,6 +141,7 @@ fun DataScreen() {
                 }
                 "Month" -> sdfMonth.format(playDate) == selectedOption
                 "Year" -> playCalendar[Calendar.YEAR].toString() == selectedOption
+                "All Time" -> true
                 else -> false
             }
         }
@@ -266,6 +270,17 @@ fun DataScreen() {
                     ActivityDataPoint(months[index], count)
                 }
             }
+            "All Time" -> {
+                val yearlyMap = mutableMapOf<Int, Int>()
+                filteredScores.forEach {
+                    calendar.timeInMillis = it.genericScore.playTimestamp
+                    val year = calendar.get(Calendar.YEAR)
+                    yearlyMap[year] = yearlyMap.getOrDefault(year, 0) + 1
+                }
+                yearlyMap.keys.sorted().map { year ->
+                    ActivityDataPoint(year.toString(), yearlyMap[year] ?: 0)
+                }
+            }
             else -> emptyList()
         }
     }
@@ -330,7 +345,7 @@ fun DataScreen() {
 
                     Box(modifier = Modifier.weight(0.6f)) {
                         Surface(
-                            onClick = { optionExpanded = true },
+                            onClick = { if (selectedRange != "All Time") optionExpanded = true },
                             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                             shape = RoundedCornerShape(8.dp),
                             border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
@@ -346,11 +361,13 @@ fun DataScreen() {
                                     modifier = Modifier.weight(1f),
                                     maxLines = 1
                                 )
-                                Icon(
-                                    imageVector = Icons.Default.ArrowDropDown,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurface
-                                )
+                                if (selectedRange != "All Time") {
+                                    Icon(
+                                        imageVector = Icons.Default.ArrowDropDown,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
                             }
                         }
                     }
