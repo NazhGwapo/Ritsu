@@ -94,13 +94,13 @@ fun OcrTestDialog(onDismiss: () -> Unit) {
                     selectedConfigData = gameConfigData
                     
                     val ocrManager = OCRManager()
-                    val textResult = ocrManager.recognizeText(bitmap)
-                    fullTextResult = textResult
+                    // Use processImage which handles all recognizers
+                    val results = ocrManager.processImage(bitmap, gameConfigData)
+                    ocrResults = results
                     
-                    if (textResult != null) {
-                        val results = ocrManager.processImage(bitmap, gameConfigData)
-                        ocrResults = results
-                    }
+                    // recognizeText is now internal/private to OCRManager, so we can't easily get fullTextResult
+                    // for visualization here without exposing it. For now, let's just clear it.
+                    fullTextResult = null
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
