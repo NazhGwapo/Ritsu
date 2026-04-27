@@ -105,7 +105,7 @@ fun ScoreScreen(
     }
 
     // UI Scroll Behavior (Auto-hide search bar)
-    val searchBarHeight = 80.dp
+    val searchBarHeight = 64.dp
     val searchBarHeightPx = with(LocalDensity.current) { searchBarHeight.toPx() }
     var searchBarOffsetHeightPx by remember { mutableFloatStateOf(0f) }
 

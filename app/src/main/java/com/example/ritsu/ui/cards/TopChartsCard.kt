@@ -3,7 +3,9 @@ package com.example.ritsu.ui.cards
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -26,8 +28,10 @@ data class TopChartItem(
     val rank: Int,
     val songTitle: String,
     val playCount: Int,
+    val configId: Long = 0,
     val difficultyName: String = "",
     val difficultyVal: String = "",
+    val achievements: List<Pair<String, Int>> = emptyList(),
     val displayIconUri: String? = null,
     val iconRes: Int? = null
 )
@@ -171,6 +175,32 @@ fun ChartListItem(chart: TopChartItem, onClick: () -> Unit) {
                     }
                 }
             }
+
+            if (chart.achievements.isNotEmpty()) {
+                Row(
+                    modifier = Modifier
+                        .padding(top = 2.dp)
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    chart.achievements.forEach { (label, count) ->
+                        Surface(
+                            color = MaterialTheme.colorScheme.secondaryContainer,
+                            shape = RoundedCornerShape(4.dp)
+                        ) {
+                            Text(
+                                text = "$count $label",
+                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                fontSize = 10.sp
+                            )
+                        }
+                    }
+                }
+            }
             
             Text(
                 text = "${chart.playCount} plays",
@@ -187,10 +217,10 @@ fun TopChartsCardPreview() {
     RitsuTheme {
         TopChartsCard(
             charts = listOf(
-                TopChartItem(1, "Disappearance of Hatsune Miku", 11, "Expert", "6.53"),
-                TopChartItem(2, "HEAVEN'S RAVE [Master 14]", 5, "Master", "14"),
-                TopChartItem(3, "pop enemy [Hard 10+]", 5, "", "10+"),
-                TopChartItem(4, "Neo-Aspect [Expert 24]", 4, "Expert", "24")
+                TopChartItem(1, "Disappearance of Hatsune Miku", 11, 1L, "Expert", "6.53"),
+                TopChartItem(2, "HEAVEN'S RAVE [Master 14]", 5, 1L, "Master", "14"),
+                TopChartItem(3, "pop enemy [Hard 10+]", 5, 1L, "", "10+"),
+                TopChartItem(4, "Neo-Aspect [Expert 24]", 4, 1L, "Expert", "24")
             )
         )
     }

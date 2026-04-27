@@ -7,6 +7,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.Games
+import androidx.compose.material.icons.filled.MoreHoriz
+import androidx.compose.material.icons.filled.VideogameAsset
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,11 +29,13 @@ import com.example.ritsu.R
 import com.example.ritsu.ui.theme.RitsuTheme
 
 data class TopScoreItem(
+    val scoreId: Long,
     val rank: Int,
     val songTitle: String,
     val difficultyName: String,
     val difficultyVal: String,
     val accuracy: Double,
+    val maxCombo: Int,
     val playRank: String,
     val gameName: String,
     val displayIconUri: String? = null,
@@ -39,13 +45,18 @@ data class TopScoreItem(
 @Composable
 fun TopScoresCard(
     scores: List<TopScoreItem>,
+    selectedSort: String = "Accuracy",
+    onSortChange: (String) -> Unit = {},
+    availableGames: List<String> = emptyList(),
+    selectedGame: String = "All",
+    onGameChange: (String) -> Unit = {},
     onCardClick: () -> Unit = {},
     onScoreClick: (TopScoreItem) -> Unit = {},
     onMoreClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
-    var selectedSort by remember { mutableStateOf("Accuracy") }
+    var gameExpanded by remember { mutableStateOf(false) }
     val sortOptions = listOf("Accuracy", "Max Combo")
 
     ElevatedCard(
@@ -71,37 +82,73 @@ fun TopScoresCard(
                     fontWeight = FontWeight.Bold
                 )
 
-                Box {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .clickable { expanded = true }
-                            .padding(8.dp)
-                    ) {
-                        Text(
-                            text = selectedSort,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                        )
-                        Icon(
-                            imageVector = Icons.Default.ArrowDropDown,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                        )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    // Sort Dropdown
+                    Box {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .clickable { expanded = true }
+                                .padding(8.dp)
+                        ) {
+                            Text(
+                                text = selectedSort,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            )
+                            Icon(
+                                imageVector = Icons.Default.ArrowDropDown,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false },
+                            modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant)
+                        ) {
+                            sortOptions.forEach { option ->
+                                DropdownMenuItem(
+                                    text = { Text(option, color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                                    onClick = {
+                                        onSortChange(option)
+                                        expanded = false
+                                    }
+                                )
+                            }
+                        }
                     }
-                    DropdownMenu(
-                        expanded = expanded,
-                        onDismissRequest = { expanded = false },
-                        modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant)
-                    ) {
-                        sortOptions.forEach { option ->
+
+                    // Game Filter Icon Dropdown
+                    Box {
+                        IconButton(onClick = { gameExpanded = true }) {
+                            Icon(
+                                imageVector = if (selectedGame == "All") Icons.Default.FilterList else Icons.Default.VideogameAsset,
+                                contentDescription = "Filter by Game",
+                                tint = if (selectedGame == "All") MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f) else MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = gameExpanded,
+                            onDismissRequest = { gameExpanded = false },
+                            modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant)
+                        ) {
                             DropdownMenuItem(
-                                text = { Text(option, color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                                text = { Text("All", fontWeight = if (selectedGame == "All") FontWeight.Bold else FontWeight.Normal) },
                                 onClick = {
-                                    selectedSort = option
-                                    expanded = false
+                                    onGameChange("All")
+                                    gameExpanded = false
                                 }
                             )
+                            availableGames.forEach { game ->
+                                DropdownMenuItem(
+                                    text = { Text(game, fontWeight = if (selectedGame == game) FontWeight.Bold else FontWeight.Normal) },
+                                    onClick = {
+                                        onGameChange(game)
+                                        gameExpanded = false
+                                    }
+                                )
+                            }
                         }
                     }
                 }
@@ -114,7 +161,7 @@ fun TopScoresCard(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 scores.take(4).forEach { score ->
-                    ScoreListItem(score, onClick = { onScoreClick(score) })
+                    ScoreListItem(score, selectedSort = selectedSort, onClick = { onScoreClick(score) })
                 }
             }
 
@@ -146,7 +193,7 @@ fun TopScoresCard(
 }
 
 @Composable
-fun ScoreListItem(score: TopScoreItem, onClick: () -> Unit) {
+fun ScoreListItem(score: TopScoreItem, selectedSort: String = "Accuracy", onClick: () -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
@@ -194,8 +241,23 @@ fun ScoreListItem(score: TopScoreItem, onClick: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                if (score.playRank.isNotBlank()) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        shape = RoundedCornerShape(4.dp)
+                    ) {
+                        Text(
+                            text = score.playRank,
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Black,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                }
+
                 Text(
-                    text = "${score.rank}. ${score.songTitle}",
+                    text = score.songTitle,
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Medium,
                     maxLines = 1,
@@ -203,7 +265,8 @@ fun ScoreListItem(score: TopScoreItem, onClick: () -> Unit) {
                     modifier = Modifier.weight(1f)
                 )
 
-                val highlightText = score.difficultyName.takeIf { it.isNotBlank() && it != "Unknown" } ?: score.difficultyVal
+                val difficultyName = score.difficultyName.takeIf { it.isNotBlank() && it != "Unknown" }
+                val highlightText = difficultyName ?: score.difficultyVal
 
                 if (highlightText.isNotBlank()) {
                     Surface(
@@ -221,8 +284,13 @@ fun ScoreListItem(score: TopScoreItem, onClick: () -> Unit) {
                     }
                 }
             }
+            val statsText = if (selectedSort == "Accuracy") {
+                "${"%.2f".format(score.accuracy)}% Accuracy"
+            } else {
+                "${score.maxCombo}x Max Combo"
+            }
             Text(
-                text = "${score.difficultyVal}* - ${"%.2f".format(score.accuracy)}% Accuracy, ${score.playRank} Rank",
+                text = "${score.difficultyVal} - $statsText",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
@@ -241,10 +309,10 @@ fun TopScoresCardPreview() {
     RitsuTheme {
         TopScoresCard(
             scores = listOf(
-                TopScoreItem(1, "Disappearance of Hatsune Miku", "Expert", "6.53", 98.54123, "S", "D4DJ"),
-                TopScoreItem(2, "Neo-Aspect", "Expert", "24", 96.67, "SS", "BanG Dream!"),
-                TopScoreItem(3, "HEAVEN'S RAVE", "Master", "14", 94.12, "S", "D4DJ"),
-                TopScoreItem(4, "Yes! BanG Dream!", "Expert", "23", 92.64, "SS", "BanG Dream!")
+                TopScoreItem(1, 1, "Disappearance of Hatsune Miku", "Expert", "6.53", 98.54123, 1000, "S", "D4DJ"),
+                TopScoreItem(2, 2, "Neo-Aspect", "Expert", "24", 96.67, 1200, "SS", "BanG Dream!"),
+                TopScoreItem(3, 3, "HEAVEN'S RAVE", "Master", "14", 94.12, 800, "S", "D4DJ"),
+                TopScoreItem(4, 4, "Yes! BanG Dream!", "Expert", "23", 92.64, 950, "SS", "BanG Dream!")
             )
         )
     }

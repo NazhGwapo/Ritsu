@@ -33,6 +33,7 @@ import com.example.ritsu.ui.screens.ManageConfigsScreen
 import com.example.ritsu.ui.screens.DebugScreen
 import com.example.ritsu.ui.screens.BoxEditorScreen
 import com.example.ritsu.ui.screens.ChartDetailsScreen
+import com.example.ritsu.ui.screens.GameDetailsScreen
 import com.example.ritsu.ui.components.HeaderComponent
 import com.example.ritsu.ui.components.NavigationComponent
 import androidx.compose.animation.fadeIn
@@ -60,7 +61,8 @@ enum class Screen {
     Debug,
     BoxEditor,
     Theme,
-    ChartDetails
+    ChartDetails,
+    GameDetails
 }
 
 class MainActivity : ComponentActivity() {
@@ -147,6 +149,7 @@ fun MainContent(themeRepository: ThemeRepository) {
         navBackStackEntry?.destination?.route?.startsWith(Screen.BoxEditor.name) == true -> Screen.BoxEditor
         navBackStackEntry?.destination?.route?.startsWith(Screen.Theme.name) == true -> Screen.Theme
         navBackStackEntry?.destination?.route?.startsWith(Screen.ChartDetails.name) == true -> Screen.ChartDetails
+        navBackStackEntry?.destination?.route?.startsWith(Screen.GameDetails.name) == true -> Screen.GameDetails
         else -> Screen.Score
     }
 
@@ -201,7 +204,9 @@ fun MainContent(themeRepository: ThemeRepository) {
                     scrollToTopSignal = scoreScrollToTopSignal
                 ) 
             }
-            composable(Screen.Data.name) { DataScreen() }
+            composable(Screen.Data.name) { 
+                DataScreen(navController = navController) 
+            }
             composable(Screen.Options.name) {
                 OptionsScreen(
                     onManageConfigsClick = { navController.navigate(Screen.ManageConfigs.name) },
@@ -246,6 +251,16 @@ fun MainContent(themeRepository: ThemeRepository) {
                             }
                         }
                     },
+                    onBack = { navController.popBackStack() }
+                )
+            }
+            composable(
+                route = Screen.GameDetails.name + "/{configId}",
+                arguments = listOf(navArgument("configId") { type = NavType.LongType })
+            ) { backStackEntry ->
+                val configId = backStackEntry.arguments?.getLong("configId") ?: 0L
+                GameDetailsScreen(
+                    configId = configId,
                     onBack = { navController.popBackStack() }
                 )
             }

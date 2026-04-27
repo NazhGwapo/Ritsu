@@ -29,6 +29,7 @@ fun HeaderComponent(
                     Screen.BoxEditor -> "Box Editor"
                     Screen.Theme -> "Theme"
                     Screen.ChartDetails -> "Chart Details"
+                    Screen.GameDetails -> "Game Details"
                 }
             )
         },

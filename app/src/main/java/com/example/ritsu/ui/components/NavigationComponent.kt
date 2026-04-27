@@ -64,66 +64,68 @@ fun NavigationComponent(
     var selectedConfigForGallery by remember { mutableStateOf<GameConfig?>(null) }
 
     val galleryLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia()
-    ) { uri ->
-        if (uri != null && selectedConfigForGallery != null) {
+        contract = ActivityResultContracts.PickMultipleVisualMedia()
+    ) { uris ->
+        if (uris.isNotEmpty() && selectedConfigForGallery != null) {
             val config = selectedConfigForGallery!!
-            scope.launch {
-                val bitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                    ImageDecoder.decodeBitmap(ImageDecoder.createSource(context.contentResolver, uri))
-                } else {
-                    MediaStore.Images.Media.getBitmap(context.contentResolver, uri)
-                }.copy(android.graphics.Bitmap.Config.ARGB_8888, true)
+            uris.forEach { uri ->
+                scope.launch {
+                    val bitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                        ImageDecoder.decodeBitmap(ImageDecoder.createSource(context.contentResolver, uri))
+                    } else {
+                        MediaStore.Images.Media.getBitmap(context.contentResolver, uri)
+                    }.copy(android.graphics.Bitmap.Config.ARGB_8888, true)
 
-                val configData = json.decodeFromString<GameConfigData>(config.configData)
-                val extractedData = ocrManager.processImage(bitmap, configData)
+                    val configData = json.decodeFromString<GameConfigData>(config.configData)
+                    val extractedData = ocrManager.processImage(bitmap, configData)
 
-                // Extract play timestamp from metadata
-                var playTimestamp = System.currentTimeMillis()
-                try {
-                    context.contentResolver.openInputStream(uri)?.use { stream ->
-                        val exif = ExifInterface(stream)
-                        val dateTime = exif.getAttribute(ExifInterface.TAG_DATETIME_ORIGINAL) 
-                            ?: exif.getAttribute(ExifInterface.TAG_DATETIME)
-                        if (dateTime != null) {
-                            val sdf = java.text.SimpleDateFormat("yyyy:MM:dd HH:mm:ss", java.util.Locale.getDefault())
-                            playTimestamp = sdf.parse(dateTime)?.time ?: playTimestamp
+                    // Extract play timestamp from metadata
+                    var playTimestamp = System.currentTimeMillis()
+                    try {
+                        context.contentResolver.openInputStream(uri)?.use { stream ->
+                            val exif = ExifInterface(stream)
+                            val dateTime = exif.getAttribute(ExifInterface.TAG_DATETIME_ORIGINAL) 
+                                ?: exif.getAttribute(ExifInterface.TAG_DATETIME)
+                            if (dateTime != null) {
+                                val sdf = java.text.SimpleDateFormat("yyyy:MM:dd HH:mm:ss", java.util.Locale.getDefault())
+                                playTimestamp = sdf.parse(dateTime)?.time ?: playTimestamp
+                            }
                         }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
                     }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
 
-                // Get accuracy from OCR or default to calculation if empty
-                var accuracyVal = extractedData["accuracy"]?.toDoubleOrNull()
-                if (accuracyVal == null) {
-                    accuracyVal = AccuracyCalculator.calculate(extractedData, configData) ?: 0.0
-                }
+                    // Get accuracy from OCR or default to calculation if empty
+                    var accuracyVal = extractedData["accuracy"]?.toDoubleOrNull()
+                    if (accuracyVal == null) {
+                        accuracyVal = AccuracyCalculator.calculate(extractedData, configData) ?: 0.0
+                    }
 
-                val score = GenericScore(
-                    configId = config.id,
-                    songTitle = extractedData["songTitle"] ?: "Unknown",
-                    difficultyName = extractedData["difficultyName"] ?: "Unknown",
-                    difficultyVal = extractedData["difficultyVal"] ?: "0.0",
-                    difficultySortValue = GenericScore.parseDifficulty(extractedData["difficultyVal"] ?: "0.0"),
-                    totalScore = extractedData["totalScore"]?.filter { it.isDigit() }?.toLongOrNull() ?: 0L,
-                    maxCombo = extractedData["maxCombo"]?.filter { it.isDigit() }?.toIntOrNull() ?: 0,
-                    accuracy = accuracyVal,
-                    playRank = if (configData.useRankOcr) (extractedData["playRank"] ?: "N/A") else "",
-                    playTimestamp = playTimestamp,
-                    importTimestamp = System.currentTimeMillis()
-                )
-
-                val details = configData.allFieldsWithCategory.map { (field, category) ->
-                    ScoreDetail(
-                        scoreId = 0, // Will be set in repository
-                        key = field.key,
-                        value = extractedData[field.key] ?: "",
-                        category = category
+                    val score = GenericScore(
+                        configId = config.id,
+                        songTitle = extractedData["songTitle"] ?: "Unknown",
+                        difficultyName = extractedData["difficultyName"] ?: "Unknown",
+                        difficultyVal = extractedData["difficultyVal"] ?: "0.0",
+                        difficultySortValue = GenericScore.parseDifficulty(extractedData["difficultyVal"] ?: "0.0"),
+                        totalScore = extractedData["totalScore"]?.filter { it.isDigit() }?.toLongOrNull() ?: 0L,
+                        maxCombo = extractedData["maxCombo"]?.filter { it.isDigit() }?.toIntOrNull() ?: 0,
+                        accuracy = accuracyVal,
+                        playRank = if (configData.useRankOcr) (extractedData["playRank"] ?: "N/A") else "",
+                        playTimestamp = playTimestamp,
+                        importTimestamp = System.currentTimeMillis()
                     )
-                }
 
-                repository.saveFullScore(score, details)
+                    val details = configData.allFieldsWithCategory.map { (field, category) ->
+                        ScoreDetail(
+                            scoreId = 0, // Will be set in repository
+                            key = field.key,
+                            value = extractedData[field.key] ?: "",
+                            category = category
+                        )
+                    }
+
+                    repository.saveFullScore(score, details)
+                }
             }
         }
         selectedConfigForGallery = null

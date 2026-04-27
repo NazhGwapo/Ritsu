@@ -33,6 +33,7 @@ fun ChartDetailsScreen(
     difficultyName: String,
     difficultyVal: String,
     onDifficultyClick: (Long, String, String, String) -> Unit = { _, _, _, _ -> },
+    onGameClick: (Long) -> Unit = {},
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
@@ -45,12 +46,19 @@ fun ChartDetailsScreen(
     val chartScores by scoreDao.getScoresForChart(configId, songTitle, difficultyName, difficultyVal)
         .collectAsState(initial = emptyList())
     
-    val otherCharts by scoreDao.getUniqueChartsForSong(configId, songTitle)
+    val allScoresForSong by scoreDao.getUniqueChartsForSong(configId, songTitle)
         .collectAsState(initial = emptyList())
     
-    val filteredOtherCharts = otherCharts.filter { 
-        it.difficultyName != difficultyName || it.difficultyVal != difficultyVal 
+    // We need to count plays for each unique chart. 
+    // Since getUniqueChartsForSong returns grouped results (one per chart),
+    // we need to actually fetch counts for those charts.
+    val chartPlayCounts = remember(allScoresForSong) {
+        mutableMapOf<String, Int>()
     }
+
+    // A better way is to fetch all scores for the song and group them in memory
+    // But for now, since we have the charts, let's just show them.
+    // I'll update the aggregation to group everything manually from a full list for accurate counts.
 
     var sortMode by remember { mutableStateOf(LeaderboardSortMode.SCORE) }
     var selectedScoreRecord by remember { mutableStateOf<FullScoreRecord?>(null) }
@@ -93,7 +101,8 @@ fun ChartDetailsScreen(
                     Text(
                         text = gameConfig?.gameName ?: "Unknown Game",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.clickable { onGameClick(configId) }
                     )
                 }
             }
@@ -209,6 +218,10 @@ fun ChartDetailsScreen(
                         fontWeight = FontWeight.Bold
                     )
                     
+                    val filteredOtherCharts = allScoresForSong.filter { 
+                        it.difficultyName != difficultyName || it.difficultyVal != difficultyVal 
+                    }
+
                     if (filteredOtherCharts.isEmpty()) {
                         Box(
                             modifier = Modifier
@@ -224,6 +237,14 @@ fun ChartDetailsScreen(
                         }
                     } else {
                         filteredOtherCharts.forEach { chart ->
+                            // For play count, we'd ideally have it from the query.
+                            // Since we don't yet, let's keep it generic or add a placeholder text.
+                            // Wait, I should probably implement a way to get the count.
+                            // I'll add a helper flow to get counts.
+                            
+                            val playCount by scoreDao.getTrackCountForChart(configId, songTitle, chart.difficultyName, chart.difficultyVal)
+                                .collectAsState(initial = 0)
+
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -239,7 +260,7 @@ fun ChartDetailsScreen(
                                 DifficultyBadge(chart.difficultyName, chart.difficultyVal)
                                 
                                 Text(
-                                    text = "recorded plays",
+                                    text = "$playCount plays",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                                 )
@@ -261,7 +282,7 @@ fun ChartDetailsScreen(
             gameConfig = gameConfig,
             scoreDao = scoreDao,
             onDismiss = { selectedScoreRecord = null },
-            onChartDetails = { selectedScoreRecord = null } // User is already on chart details
+            onChartDetails = { selectedScoreRecord = null }
         )
     }
 }

@@ -169,8 +169,14 @@ fun ScoreCard(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
+                val difficultyText = buildString {
+                    if (score.difficultyName.isNotBlank() && score.difficultyName != "Unknown") {
+                        append("[${score.difficultyName}] ")
+                    }
+                    append("${score.difficultyVal} - ${"%,d".format(score.totalScore)} - ${"%.2f".format(score.accuracy)}% - ${score.maxCombo}x")
+                }
                 Text(
-                    text = "[${score.difficultyName}] ${score.difficultyVal} - ${"%,d".format(score.totalScore)} - ${"%.2f".format(score.accuracy)}%",
+                    text = difficultyText,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                     maxLines = 1,

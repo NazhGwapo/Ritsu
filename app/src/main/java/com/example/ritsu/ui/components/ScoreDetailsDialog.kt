@@ -15,6 +15,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -133,14 +135,23 @@ fun ScoreDetailsDialogContent(
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.Top
             ) {
-                Text(
-                    text = score.songTitle,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = score.songTitle,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = gameConfig.gameName,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
+                }
                 IconButton(onClick = onDismiss) {
                     Icon(Icons.Default.Close, contentDescription = "Close")
                 }
@@ -152,69 +163,190 @@ fun ScoreDetailsDialogContent(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Score Summary
+                // Main Performance Card
                 item {
-                    Column {
-                        Text(
-                            text = "${gameConfig.gameName} - [${score.difficultyName}] ${score.difficultyVal}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
-                        )
-                        val ppValue = details.find { it.key.contains("PP", ignoreCase = true) }?.value
-                        val performanceText = buildString {
-                            if (configData?.useRankOcr != false && score.playRank.isNotBlank()) {
-                                append("${score.playRank} ")
+                    Surface(
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            if (score.playRank.isNotBlank()) {
+                                Surface(
+                                    color = MaterialTheme.colorScheme.primaryContainer,
+                                    shape = RoundedCornerShape(8.dp)
+                                ) {
+                                    Text(
+                                        text = score.playRank,
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                        style = MaterialTheme.typography.headlineMedium,
+                                        fontWeight = FontWeight.Black,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(16.dp))
                             }
-                            append("${"%.2f".format(score.accuracy)}%")
-                            if (ppValue != null) append(" - ${ppValue}PP")
-                            append(" - ${"%,d".format(score.totalScore)}")
+
+                            Column {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    val difficultyName = score.difficultyName.takeIf { it.isNotBlank() && it != "Unknown" }
+                                    if (difficultyName != null) {
+                                        Surface(
+                                            color = MaterialTheme.colorScheme.primary,
+                                            shape = RoundedCornerShape(4.dp)
+                                        ) {
+                                            Text(
+                                                text = difficultyName,
+                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                                style = MaterialTheme.typography.labelMedium,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.onPrimary
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                    }
+                                    Text(
+                                        text = score.difficultyVal,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "${"%.2f".format(score.accuracy)}% Accuracy",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = "${"%,d".format(score.totalScore)} - ${score.maxCombo}x Combo",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                )
+                            }
                         }
-                        Text(
-                            text = performanceText,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
-                        )
                     }
                 }
 
-                // Categorized Details
-                val categories = listOf("Judgment" to "Judgement Breakdown", "Metric" to "Metrics", "Misc" to "Misc")
+                // Categorized Details (Metrics & Judgments)
+                val categories = listOf("Judgment" to "Judgement Breakdown", "Metric" to "Metrics")
                 categories.forEach { (catKey, catLabel) ->
-                    val catDetails = details.filter { it.category == catKey }
-                    if (catDetails.isNotEmpty()) {
+                    val catFields = configData?.allFieldsWithCategory
+                        ?.filter { it.second == catKey && it.first.type != "boolean" }
+                        ?.map { it.first } ?: emptyList()
+                    
+                    if (catFields.isNotEmpty()) {
                         item {
                             Column {
                                 Text(
                                     text = catLabel,
                                     style = MaterialTheme.typography.titleSmall,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = MaterialTheme.colorScheme.onSurface
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.padding(bottom = 8.dp)
                                 )
-                                catDetails.forEach { detail ->
-                                    val field = fieldMap[detail.key]
-                                    val isBoolean = field?.type == "boolean"
-                                    val isTrue = detail.value.lowercase() == "true"
+                                
+                                Column(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    val chunks = catFields.chunked(3)
+                                    chunks.forEach { rowFields ->
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            rowFields.forEach { field ->
+                                                val detail = details.find { it.key == field.key }
+                                                val value = detail?.value ?: "0"
 
-                                    if (isBoolean) {
-                                        if (isTrue) {
-                                            Text(
-                                                text = field?.label ?: detail.key,
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                                            )
+                                                Surface(
+                                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    modifier = Modifier
+                                                        .weight(1f)
+                                                        .heightIn(min = 60.dp)
+                                                ) {
+                                                    Column(
+                                                        modifier = Modifier.padding(8.dp),
+                                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                                        verticalArrangement = Arrangement.Center
+                                                    ) {
+                                                        Text(
+                                                            text = field.label,
+                                                            style = MaterialTheme.typography.labelSmall,
+                                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                                            textAlign = TextAlign.Center,
+                                                            maxLines = 1,
+                                                            overflow = TextOverflow.Ellipsis
+                                                        )
+                                                        val displayValue = if (catKey == "Judgment") {
+                                                            val v = value.toIntOrNull() ?: 0
+                                                            "${v}x"
+                                                        } else {
+                                                            value.ifEmpty { "0" }
+                                                        }
+                                                        Text(
+                                                            text = displayValue,
+                                                            style = MaterialTheme.typography.bodyMedium,
+                                                            fontWeight = FontWeight.Bold,
+                                                            textAlign = TextAlign.Center
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                            // Add spacers for incomplete rows to maintain column alignment
+                                            repeat(3 - rowFields.size) {
+                                                Spacer(modifier = Modifier.weight(1f))
+                                            }
                                         }
-                                    } else {
-                                        val displayLabel = field?.label ?: detail.key
-                                        val displayValue = if (catKey == "Judgment" && detail.value.toIntOrNull() != null) {
-                                            "${detail.value}x"
-                                        } else {
-                                            detail.value
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Achievements (Booleans)
+                val booleanDetails = details.filter { detail ->
+                    val field = fieldMap[detail.key]
+                    field?.type == "boolean" && detail.value.lowercase() == "true"
+                }
+                if (booleanDetails.isNotEmpty()) {
+                    item {
+                        Column {
+                            Text(
+                                text = "Achievements",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(bottom = 8.dp)
+                            )
+                            Column(
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                val chunks = booleanDetails.chunked(2)
+                                chunks.forEach { rowDetails ->
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        rowDetails.forEach { detail ->
+                                            val field = fieldMap[detail.key]
+                                            Surface(
+                                                color = MaterialTheme.colorScheme.secondaryContainer,
+                                                shape = RoundedCornerShape(16.dp)
+                                            ) {
+                                                Text(
+                                                    text = field?.label ?: detail.key,
+                                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                                    style = MaterialTheme.typography.labelMedium,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                                                )
+                                            }
                                         }
-                                        Text(
-                                            text = "$displayLabel - $displayValue",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                                        )
                                     }
                                 }
                             }
@@ -224,26 +356,23 @@ fun ScoreDetailsDialogContent(
 
                 // Tracking Info
                 item {
-                    Column {
-                        val sdf = remember { SimpleDateFormat("MM/dd/yyyy, h:mm a", Locale.getDefault()) }
-                        Text(
-                            text = "Played on ${sdf.format(Date(score.playTimestamp))}",
-                            style = MaterialTheme.typography.bodySmall,
-                            fontStyle = FontStyle.Italic,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                        )
-                        Text(
-                            text = "Imported on ${sdf.format(Date(score.importTimestamp))}",
-                            style = MaterialTheme.typography.bodySmall,
-                            fontStyle = FontStyle.Italic,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "This song has been tracked $songTrackCount times, this specific chart tracked $chartTrackCount times.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
-                        )
+                    Surface(
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            val sdf = remember { SimpleDateFormat("MMM d, yyyy 'at' h:mm a", Locale.getDefault()) }
+                            InfoRow("Played", sdf.format(Date(score.playTimestamp)))
+                            InfoRow("Imported", sdf.format(Date(score.importTimestamp)))
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Tracked $songTrackCount times ($chartTrackCount for this chart)",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                                fontStyle = FontStyle.Italic
+                            )
+                        }
                     }
                 }
 
@@ -351,6 +480,25 @@ fun ScoreDetailsDialogContent(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun InfoRow(label: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = FontWeight.Medium
+        )
     }
 }
 

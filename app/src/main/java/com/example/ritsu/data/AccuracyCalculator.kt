@@ -55,4 +55,20 @@ object AccuracyCalculator {
 
         return (weightedHits / totalNotes) * 100.0
     }
+
+    /**
+     * Calculates the total note count from a list of ScoreDetail based on judgments.
+     */
+    fun getTotalNoteCount(details: List<ScoreDetail>, config: GameConfigData): Int {
+        val judgments = config.judgments
+        if (judgments.isEmpty()) return 0
+
+        var totalNotes = 0
+        judgments.forEach { field ->
+            val detail = details.find { it.key == field.key } ?: return@forEach
+            val count = detail.value.filter { it.isDigit() }.toIntOrNull() ?: 0
+            totalNotes += count
+        }
+        return totalNotes
+    }
 }

@@ -206,6 +206,8 @@ class OCRManager {
             if (digitsOnly.isNotEmpty()) {
                 val trimmed = digitsOnly.trimStart('0')
                 resultText = if (trimmed.isEmpty()) "0" else if (trimmed.startsWith(".")) "0$trimmed" else trimmed
+            } else {
+                resultText = "0"
             }
         }
 
