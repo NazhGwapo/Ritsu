@@ -1,6 +1,7 @@
 package com.example.ritsu.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -32,6 +33,7 @@ import java.util.*
 fun GameDetailsScreen(
     configId: Long,
     onChartClick: (Long, String, String, String) -> Unit,
+    onGraphClick: (Long, String, String?, String?, String?, Boolean) -> Unit = { _, _, _, _, _, _ -> },
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
@@ -163,7 +165,8 @@ fun GameDetailsScreen(
                         startLabel = startDate,
                         endLabel = endDate,
                         valueFormatter = { "%,d".format(it.toLong()) },
-                        color = MaterialTheme.colorScheme.primary
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.clickable { onGraphClick(configId, "Score", null, null, null, false) }
                     )
 
                     // 2. Accuracy Graph
@@ -173,7 +176,8 @@ fun GameDetailsScreen(
                         startLabel = startDate,
                         endLabel = endDate,
                         valueFormatter = { "%.2f%%".format(it) },
-                        color = MaterialTheme.colorScheme.secondary
+                        color = MaterialTheme.colorScheme.secondary,
+                        modifier = Modifier.clickable { onGraphClick(configId, "Accuracy", null, null, null, false) }
                     )
 
                     // 3. Combo Graph
@@ -217,7 +221,8 @@ fun GameDetailsScreen(
                             startLabel = startDate,
                             endLabel = endDate,
                             valueFormatter = { if (isComboNormalized) "%.1f%%".format(it) else "${it.toInt()}x" },
-                            color = Color(0xFFFFA000)
+                            color = Color(0xFFFFA000),
+                            modifier = Modifier.clickable { onGraphClick(configId, "Combo", null, null, null, isComboNormalized) }
                         )
                     }
 
@@ -291,7 +296,8 @@ fun GameDetailsScreen(
                                 label = "",
                                 startLabel = startDate,
                                 endLabel = endDate,
-                                valueFormatter = { if (isJudgementNormalized) "%.1f".format(it) else it.toInt().toString() }
+                                valueFormatter = { if (isJudgementNormalized) "%.1f".format(it) else it.toInt().toString() },
+                                modifier = Modifier.clickable { onGraphClick(configId, "Judgement", null, null, null, isJudgementNormalized) }
                             )
                         }
                     }
@@ -338,7 +344,8 @@ fun GameDetailsScreen(
                                 label = "",
                                 startLabel = startDate,
                                 endLabel = endDate,
-                                valueFormatter = { it.toInt().toString() }
+                                valueFormatter = { it.toInt().toString() },
+                                modifier = Modifier.clickable { onGraphClick(configId, "Metric", null, null, null, false) }
                             )
                         }
                     }

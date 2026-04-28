@@ -81,7 +81,8 @@ enum class Screen {
     GameDetails,
     TopGames,
     TopCharts,
-    TopScores
+    TopScores,
+    GraphDetail
 }
 
 class MainActivity : ComponentActivity() {
@@ -172,6 +173,7 @@ fun MainContent(themeRepository: ThemeRepository) {
         navBackStackEntry?.destination?.route?.startsWith(Screen.TopGames.name) == true -> Screen.TopGames
         navBackStackEntry?.destination?.route?.startsWith(Screen.TopCharts.name) == true -> Screen.TopCharts
         navBackStackEntry?.destination?.route?.startsWith(Screen.TopScores.name) == true -> Screen.TopScores
+        navBackStackEntry?.destination?.route?.startsWith(Screen.GraphDetail.name) == true -> Screen.GraphDetail
         else -> Screen.Score
     }
 
@@ -284,6 +286,18 @@ fun MainContent(themeRepository: ThemeRepository) {
                             }
                         }
                     },
+                    onGraphClick = { cid, type, title, dName, dVal, isNormalized ->
+                        var route = Screen.GraphDetail.name + "/$cid/$type"
+                        val params = mutableListOf<String>()
+                        if (title != null) params.add("songTitle=${android.net.Uri.encode(title)}")
+                        if (dName != null) params.add("difficultyName=${android.net.Uri.encode(dName)}")
+                        if (dVal != null) params.add("difficultyVal=${android.net.Uri.encode(dVal)}")
+                        params.add("isNormalized=$isNormalized")
+                        if (params.isNotEmpty()) {
+                            route += "?" + params.joinToString("&")
+                        }
+                        navController.navigate(route)
+                    },
                     onBack = { navController.popBackStack() }
                 )
             }
@@ -298,6 +312,18 @@ fun MainContent(themeRepository: ThemeRepository) {
                         val encodedDName = android.net.Uri.encode(difficultyName)
                         val encodedDVal = android.net.Uri.encode(difficultyVal)
                         navController.navigate(Screen.ChartDetails.name + "/$cid/$encodedTitle/$encodedDName/$encodedDVal")
+                    },
+                    onGraphClick = { cid, type, title, dName, dVal, isNormalized ->
+                        var route = Screen.GraphDetail.name + "/$cid/$type"
+                        val params = mutableListOf<String>()
+                        if (title != null) params.add("songTitle=${android.net.Uri.encode(title)}")
+                        if (dName != null) params.add("difficultyName=${android.net.Uri.encode(dName)}")
+                        if (dVal != null) params.add("difficultyVal=${android.net.Uri.encode(dVal)}")
+                        params.add("isNormalized=$isNormalized")
+                        if (params.isNotEmpty()) {
+                            route += "?" + params.joinToString("&")
+                        }
+                        navController.navigate(route)
                     },
                     onBack = { navController.popBackStack() }
                 )
@@ -662,6 +688,46 @@ fun MainContent(themeRepository: ThemeRepository) {
                         )
                     }
                 }
+            }
+            composable(
+                route = Screen.GraphDetail.name + "/{configId}/{graphType}?songTitle={songTitle}&difficultyName={difficultyName}&difficultyVal={difficultyVal}&isNormalized={isNormalized}",
+                arguments = listOf(
+                    navArgument("configId") { type = NavType.LongType },
+                    navArgument("graphType") { type = NavType.StringType },
+                    navArgument("songTitle") { 
+                        type = NavType.StringType
+                        nullable = true 
+                    },
+                    navArgument("difficultyName") { 
+                        type = NavType.StringType
+                        nullable = true 
+                    },
+                    navArgument("difficultyVal") { 
+                        type = NavType.StringType
+                        nullable = true 
+                    },
+                    navArgument("isNormalized") {
+                        type = NavType.BoolType
+                        defaultValue = false
+                    }
+                )
+            ) { backStackEntry ->
+                val configId = backStackEntry.arguments?.getLong("configId") ?: 0L
+                val graphType = backStackEntry.arguments?.getString("graphType") ?: "Score"
+                val songTitle = backStackEntry.arguments?.getString("songTitle")
+                val difficultyName = backStackEntry.arguments?.getString("difficultyName")
+                val difficultyVal = backStackEntry.arguments?.getString("difficultyVal")
+                val isNormalized = backStackEntry.arguments?.getBoolean("isNormalized") ?: false
+                
+                com.example.ritsu.ui.screens.GraphDetailScreen(
+                    configId = configId,
+                    graphType = graphType,
+                    songTitle = songTitle,
+                    difficultyName = difficultyName,
+                    difficultyVal = difficultyVal,
+                    isNormalized = isNormalized,
+                    onBack = { navController.popBackStack() }
+                )
             }
         }
     }

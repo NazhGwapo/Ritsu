@@ -35,6 +35,7 @@ fun ChartDetailsScreen(
     difficultyVal: String,
     onDifficultyClick: (Long, String, String, String) -> Unit = { _, _, _, _ -> },
     onGameClick: (Long) -> Unit = {},
+    onGraphClick: (Long, String, String?, String?, String?, Boolean) -> Unit = { _, _, _, _, _, _ -> },
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
@@ -123,7 +124,8 @@ fun ChartDetailsScreen(
                         startLabel = startDate,
                         endLabel = endDate,
                         valueFormatter = { "%,d".format(it.toLong()) },
-                        color = MaterialTheme.colorScheme.primary
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.clickable { onGraphClick(configId, "Score", songTitle, difficultyName, difficultyVal, false) }
                     )
 
                     // 2. Accuracy Graph
@@ -133,7 +135,8 @@ fun ChartDetailsScreen(
                         startLabel = startDate,
                         endLabel = endDate,
                         valueFormatter = { "%.2f%%".format(it) },
-                        color = MaterialTheme.colorScheme.secondary
+                        color = MaterialTheme.colorScheme.secondary,
+                        modifier = Modifier.clickable { onGraphClick(configId, "Accuracy", songTitle, difficultyName, difficultyVal, false) }
                     )
 
                     // 3. Combo Graph
@@ -143,7 +146,8 @@ fun ChartDetailsScreen(
                         startLabel = startDate,
                         endLabel = endDate,
                         valueFormatter = { "${it.toInt()}x" },
-                        color = Color(0xFFFFA000) // Orange/Amber
+                        color = Color(0xFFFFA000), // Orange/Amber
+                        modifier = Modifier.clickable { onGraphClick(configId, "Combo", songTitle, difficultyName, difficultyVal, false) }
                     )
 
                     // 4. Judgement Breakdown Graph
@@ -182,7 +186,8 @@ fun ChartDetailsScreen(
                             series = judgementSeries,
                             label = "Judgement Breakdown",
                             startLabel = startDate,
-                            endLabel = endDate
+                            endLabel = endDate,
+                            modifier = Modifier.clickable { onGraphClick(configId, "Judgement", songTitle, difficultyName, difficultyVal, false) }
                         )
                     }
 
@@ -221,7 +226,8 @@ fun ChartDetailsScreen(
                             series = metricSeries,
                             label = "Metric Breakdown",
                             startLabel = startDate,
-                            endLabel = endDate
+                            endLabel = endDate,
+                            modifier = Modifier.clickable { onGraphClick(configId, "Metric", songTitle, difficultyName, difficultyVal, false) }
                         )
                     }
                 }

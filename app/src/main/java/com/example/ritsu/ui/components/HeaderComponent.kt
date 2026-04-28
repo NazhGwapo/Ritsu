@@ -38,6 +38,7 @@ fun HeaderComponent(
                         Screen.TopGames -> "Top Games"
                         Screen.TopCharts -> "Top Charts"
                         Screen.TopScores -> "Top Scores"
+                        Screen.GraphDetail -> "Graph Detail"
                     }
                 )
                 if (subtitle != null) {
