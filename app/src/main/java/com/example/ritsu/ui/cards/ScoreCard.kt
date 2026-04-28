@@ -21,7 +21,7 @@ import androidx.compose.ui.unit.sp
 import com.example.ritsu.data.GenericScore
 import com.example.ritsu.ui.theme.RitsuTheme
 
-import coil3.compose.AsyncImage
+import com.example.ritsu.ui.utils.AsyncImage
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.Image
 import androidx.compose.ui.graphics.asImageBitmap

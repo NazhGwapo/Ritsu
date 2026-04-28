@@ -85,6 +85,7 @@ class ServiceControlActivity : ComponentActivity() {
                     finish()
                 }
                 .setOnCancelListener { finish() }
+                .setOnDismissListener { if (!isFinishing) finish() }
                 .show()
         }
     }

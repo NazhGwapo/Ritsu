@@ -101,6 +101,7 @@ fun MainContent(themeRepository: ThemeRepository) {
     }
 
     var scoreScrollToTopSignal by remember { mutableStateOf(0L) }
+    var showDataExportDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -113,6 +114,9 @@ fun MainContent(themeRepository: ThemeRepository) {
                         Screen.Score, Screen.Data -> navController.navigate(Screen.Options.name)
                         else -> navController.popBackStack()
                     }
+                },
+                onShareClick = {
+                    showDataExportDialog = true
                 }
             )
         },
@@ -141,7 +145,9 @@ fun MainContent(themeRepository: ThemeRepository) {
             navController = navController,
             innerPadding = innerPadding,
             themeRepository = themeRepository,
-            scoreScrollToTopSignal = scoreScrollToTopSignal
+            scoreScrollToTopSignal = scoreScrollToTopSignal,
+            showDataExportDialog = showDataExportDialog,
+            onDismissDataExport = { showDataExportDialog = false }
         )
     }
 }

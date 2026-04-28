@@ -20,7 +20,9 @@ fun RitsuNavGraph(
     navController: NavHostController,
     innerPadding: PaddingValues,
     themeRepository: ThemeRepository,
-    scoreScrollToTopSignal: Long
+    scoreScrollToTopSignal: Long,
+    showDataExportDialog: Boolean = false,
+    onDismissDataExport: () -> Unit = {}
 ) {
     NavHost(
         navController = navController,
@@ -38,7 +40,11 @@ fun RitsuNavGraph(
             ) 
         }
         composable(Screen.Data.name) { 
-            DataScreen(navController = navController) 
+            DataScreen(
+                navController = navController,
+                showExportDialog = showDataExportDialog,
+                onDismissExport = onDismissDataExport
+            )
         }
         composable(Screen.Options.name) {
             OptionsScreen(

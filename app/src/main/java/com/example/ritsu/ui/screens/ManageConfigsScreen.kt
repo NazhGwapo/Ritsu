@@ -21,7 +21,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
+import com.example.ritsu.ui.utils.AsyncImage
 import com.example.ritsu.data.GameConfig
 import com.example.ritsu.data.GameConfigData
 import com.example.ritsu.data.RitsuDatabase

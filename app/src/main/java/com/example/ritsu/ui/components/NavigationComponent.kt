@@ -53,6 +53,8 @@ import com.example.ritsu.service.ServiceControlActivity
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 
+private const val USE_NOTIFICATION_CAPTURE = false
+
 @Composable
 fun NavigationComponent(
     currentScreen: Screen,
@@ -173,7 +175,13 @@ fun NavigationComponent(
             contentAlignment = Alignment.Center
         ) {
             FloatingActionButton(
-                onClick = { showMenu = true },
+                onClick = { 
+                    if (USE_NOTIFICATION_CAPTURE) {
+                        showMenu = true 
+                    } else {
+                        showConfigDialog = true
+                    }
+                },
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
                 modifier = Modifier
@@ -188,49 +196,51 @@ fun NavigationComponent(
                 )
             }
             DropdownMenu(
-                expanded = showMenu,
+                expanded = showMenu && USE_NOTIFICATION_CAPTURE,
                 onDismissRequest = { showMenu = false }
             ) {
-                DropdownMenuItem(
-                    text = { Text("Activate Notification Service") },
-                    onClick = { 
-                        showMenu = false
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                            if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+                if (USE_NOTIFICATION_CAPTURE) {
+                    DropdownMenuItem(
+                        text = { Text("Activate Notification Service") },
+                        onClick = { 
+                            showMenu = false
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+                                    val intent = Intent(context, ServiceControlActivity::class.java).apply {
+                                        putExtra(ServiceControlActivity.EXTRA_COMMAND, ServiceControlActivity.COMMAND_START_SERVICE)
+                                    }
+                                    context.startActivity(intent)
+                                } else {
+                                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                }
+                            } else {
                                 val intent = Intent(context, ServiceControlActivity::class.java).apply {
                                     putExtra(ServiceControlActivity.EXTRA_COMMAND, ServiceControlActivity.COMMAND_START_SERVICE)
                                 }
                                 context.startActivity(intent)
-                            } else {
-                                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                             }
-                        } else {
-                            val intent = Intent(context, ServiceControlActivity::class.java).apply {
-                                putExtra(ServiceControlActivity.EXTRA_COMMAND, ServiceControlActivity.COMMAND_START_SERVICE)
-                            }
-                            context.startActivity(intent)
+                        },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Default.NotificationsActive,
+                                contentDescription = null
+                            )
                         }
-                    },
-                    leadingIcon = {
-                        Icon(
-                            Icons.Default.NotificationsActive,
-                            contentDescription = null
-                        )
-                    }
-                )
-                DropdownMenuItem(
-                    text = { Text("Import from Gallery") },
-                    onClick = {
-                        showMenu = false
-                        showConfigDialog = true
-                    },
-                    leadingIcon = {
-                        Icon(
-                            Icons.Default.PhotoLibrary,
-                            contentDescription = null
-                        )
-                    }
-                )
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Import from Gallery") },
+                        onClick = {
+                            showMenu = false
+                            showConfigDialog = true
+                        },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Default.PhotoLibrary,
+                                contentDescription = null
+                            )
+                        }
+                    )
+                }
             }
         }
 

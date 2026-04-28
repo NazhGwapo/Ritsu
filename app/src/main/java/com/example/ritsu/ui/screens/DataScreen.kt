@@ -36,7 +36,9 @@ import kotlin.math.pow
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DataScreen(
-    navController: androidx.navigation.NavController
+    navController: androidx.navigation.NavController,
+    showExportDialog: Boolean = false,
+    onDismissExport: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val database = remember { RitsuDatabase.getDatabase(context) }
@@ -232,28 +234,65 @@ fun DataScreen(
     }
 
     val topScores = remember(filteredScores, configs, topScoresSortMode, topScoresGameFilter) {
-        filteredScores
-            .filter { record ->
-                if (topScoresGameFilter == "All") true
-                else {
+        if (topScoresGameFilter == "All") {
+            // Distribute entries equally across games
+            val scoresByGame = filteredScores.groupBy { it.genericScore.configId }
+            val itemsPerGame = mutableMapOf<Long, MutableList<Pair<FullScoreRecord, Double>>>()
+            
+            scoresByGame.forEach { (configId, groupScores) ->
+                val config = configs.find { it.id == configId }
+                val ranked = groupScores.map { record ->
+                    val rankingValue = RankingUtils.calculateRankingValue(record, config, topScoresSortMode)
+                    Pair(record, rankingValue)
+                }.sortedByDescending { it.second }
+                itemsPerGame[configId] = ranked.toMutableList()
+            }
+            
+            val resultList = mutableListOf<TopScoreItem>()
+            val gameIds = itemsPerGame.keys.toList()
+            var addedInLastPass = true
+            var globalRank = 1
+            
+            while (addedInLastPass) {
+                addedInLastPass = false
+                gameIds.forEach { gameId ->
+                    val list = itemsPerGame[gameId]
+                    if (list != null && list.isNotEmpty()) {
+                        val (record, _) = list.removeAt(0)
+                        val config = configs.find { it.id == gameId }
+                        resultList.add(
+                            RankingUtils.mapToTopScoreItem(
+                                record = record,
+                                config = config,
+                                rank = globalRank++
+                            )
+                        )
+                        addedInLastPass = true
+                    }
+                }
+            }
+            resultList
+        } else {
+            filteredScores
+                .filter { record ->
                     val config = configs.find { it.id == record.genericScore.configId }
                     config?.gameName == topScoresGameFilter
                 }
-            }
-            .map { record ->
-                val config = configs.find { it.id == record.genericScore.configId }
-                val rankingValue = RankingUtils.calculateRankingValue(record, config, topScoresSortMode)
-                Pair(record, rankingValue)
-            }
-            .sortedByDescending { it.second }
-            .mapIndexed { index, (record, _) ->
-                val config = configs.find { it.id == record.genericScore.configId }
-                RankingUtils.mapToTopScoreItem(
-                    record = record,
-                    config = config,
-                    rank = index + 1
-                )
-            }
+                .map { record ->
+                    val config = configs.find { it.id == record.genericScore.configId }
+                    val rankingValue = RankingUtils.calculateRankingValue(record, config, topScoresSortMode)
+                    Pair(record, rankingValue)
+                }
+                .sortedByDescending { it.second }
+                .mapIndexed { index, (record, _) ->
+                    val config = configs.find { it.id == record.genericScore.configId }
+                    RankingUtils.mapToTopScoreItem(
+                        record = record,
+                        config = config,
+                        rank = index + 1
+                    )
+                }
+        }
     }
 
     val activityData = remember(filteredScores, selectedRange) {
@@ -582,6 +621,17 @@ fun DataScreen(
         com.example.ritsu.ui.screens.debug.ManualEntryDialog(
             initialRecord = scoreToEdit,
             onDismiss = { scoreToEdit = null }
+        )
+    }
+
+    if (showExportDialog) {
+        com.example.ritsu.ui.components.DataExportDialog(
+            dateRange = selectedOption,
+            topGames = topGames,
+            topCharts = topCharts,
+            topScores = topScores,
+            activityData = activityData,
+            onDismiss = onDismissExport
         )
     }
 }

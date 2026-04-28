@@ -24,7 +24,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil3.compose.AsyncImage
+import com.example.ritsu.ui.utils.AsyncImage
 import com.example.ritsu.R
 import com.example.ritsu.ui.theme.RitsuTheme
 

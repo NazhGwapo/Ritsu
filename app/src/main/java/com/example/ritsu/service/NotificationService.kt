@@ -14,6 +14,7 @@ import android.hardware.display.VirtualDisplay
 import android.media.ImageReader
 import android.media.projection.MediaProjection
 import android.media.projection.MediaProjectionManager
+import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.Handler
 import android.os.IBinder
@@ -78,6 +79,24 @@ class NotificationService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (intent?.action == ACTION_EXIT) {
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
+            return START_NOT_STICKY
+        }
+
+        // Show notification and promote to foreground service immediately
+        val notification = createNotification()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            var type = ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                type = type or ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+            }
+            startForeground(NOTIFICATION_ID, notification, type)
+        } else {
+            startForeground(NOTIFICATION_ID, notification)
+        }
+
         when (intent?.action) {
             ACTION_START_PROJECTION -> {
                 val resultCode = intent.getIntExtra(EXTRA_PROJECTION_RESULT_CODE, 0)
@@ -105,14 +124,8 @@ class NotificationService : Service() {
             ACTION_CAPTURE -> {
                 captureScreen()
             }
-            ACTION_EXIT -> {
-                stopSelf()
-                return START_NOT_STICKY
-            }
         }
 
-        val notification = createNotification()
-        startForeground(NOTIFICATION_ID, notification)
         return START_STICKY
     }
 
@@ -158,16 +171,16 @@ class NotificationService : Service() {
         )
 
         imageReader?.setOnImageAvailableListener({ reader ->
-            val image = reader.acquireLatestImage()
+            val image = try { reader.acquireLatestImage() } catch (e: Exception) { null }
             if (image != null) {
                 val planes = image.planes
                 val buffer = planes[0].buffer
                 val pixelStride = planes[0].pixelStride
                 val rowStride = planes[0].rowStride
-                val rowPadding = rowStride - pixelStride * width
                 
+                val actualWidth = rowStride / pixelStride
                 val bitmap = Bitmap.createBitmap(
-                    width + rowPadding / pixelStride,
+                    actualWidth,
                     height,
                     Bitmap.Config.ARGB_8888
                 )
