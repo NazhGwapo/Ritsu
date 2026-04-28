@@ -4,7 +4,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -15,6 +19,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.example.ritsu.data.FullScoreRecord
 import com.example.ritsu.data.GameConfigData
 import com.example.ritsu.data.RitsuDatabase
@@ -25,8 +31,12 @@ import com.example.ritsu.ui.components.MultiLineGraph
 import com.example.ritsu.ui.components.GraphSeries
 import com.example.ritsu.ui.components.DifficultyBadge
 import com.example.ritsu.ui.components.ScoreDetailsDialog
+import com.example.ritsu.ui.navigation.DetailFilterSheet
+import com.example.ritsu.ui.utils.DateUtils
 import kotlinx.serialization.json.Json
+import java.util.*
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChartDetailsScreen(
     configId: Long,
@@ -53,19 +63,44 @@ fun ChartDetailsScreen(
     val allScoresForSong by scoreDao.getUniqueChartsForSong(configId, songTitle)
         .collectAsState(initial = emptyList())
     
-    var sortMode by remember { mutableStateOf(LeaderboardSortMode.SCORE) }
-    var selectedScoreRecord by remember { mutableStateOf<FullScoreRecord?>(null) }
+    // --- DATE FILTERING STATE ---
+    val dateRanges = listOf("Day", "Week", "Month", "Year", "All Time", "Custom")
+    var selectedDateRange by remember { mutableStateOf("All Time") }
+    val dateOptions = remember(selectedDateRange) { DateUtils.getDateOptions(selectedDateRange) }
+    var selectedDateOption by remember(selectedDateRange) { mutableStateOf(dateOptions.firstOrNull() ?: "") }
+    var customStartDate by remember { mutableLongStateOf(0L) }
+    var customEndDate by remember { mutableLongStateOf(Long.MAX_VALUE) }
+    
+    var currentFilterSheet by remember { mutableStateOf(DetailFilterSheet.NONE) }
+    var datePickerVisible by remember { mutableStateOf(false) }
 
-    val sortedScores = remember(chartScores, sortMode) {
-        when (sortMode) {
-            LeaderboardSortMode.SCORE -> chartScores.sortedByDescending { it.genericScore.totalScore }
-            LeaderboardSortMode.ACCURACY -> chartScores.sortedByDescending { it.genericScore.accuracy }
-            LeaderboardSortMode.MAX_COMBO -> chartScores.sortedByDescending { it.genericScore.maxCombo }
+    // --- DATA FILTERING ---
+    val filteredScores = remember(chartScores, selectedDateRange, selectedDateOption, customStartDate, customEndDate) {
+        chartScores.filter { record ->
+            DateUtils.filterByDate(
+                record.genericScore.playTimestamp,
+                selectedDateRange,
+                selectedDateOption,
+                customStartDate,
+                customEndDate
+            )
         }
     }
 
-    val scoresOldestToNewest = remember(chartScores) {
-        chartScores.sortedBy { it.genericScore.playTimestamp }
+    var sortMode by remember { mutableStateOf(LeaderboardSortMode.SCORE) }
+    var selectedScoreRecord by remember { mutableStateOf<FullScoreRecord?>(null) }
+    var scoreToEdit by remember { mutableStateOf<FullScoreRecord?>(null) }
+
+    val sortedScores = remember(filteredScores, sortMode) {
+        when (sortMode) {
+            LeaderboardSortMode.SCORE -> filteredScores.sortedByDescending { it.genericScore.totalScore }
+            LeaderboardSortMode.ACCURACY -> filteredScores.sortedByDescending { it.genericScore.accuracy }
+            LeaderboardSortMode.MAX_COMBO -> filteredScores.sortedByDescending { it.genericScore.maxCombo }
+        }
+    }
+
+    val scoresOldestToNewest = remember(filteredScores) {
+        filteredScores.sortedBy { it.genericScore.playTimestamp }
     }
 
     Surface(
@@ -101,6 +136,35 @@ fun ChartDetailsScreen(
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.clickable { onGameClick(configId) }
                     )
+                }
+            }
+
+            // --- TOP FILTERS BAR ---
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    FilterChip(
+                        selected = selectedDateRange != "All Time",
+                        onClick = { currentFilterSheet = DetailFilterSheet.DATE_RANGE },
+                        label = { Text(selectedDateRange, fontSize = 12.sp) },
+                        leadingIcon = { Icon(Icons.Default.CalendarMonth, null, modifier = Modifier.size(16.dp)) }
+                    )
+                    if (selectedDateRange != "All Time" && selectedDateRange != "Custom") {
+                        FilterChip(
+                            selected = true,
+                            onClick = { currentFilterSheet = DetailFilterSheet.DATE_PERIOD },
+                            label = { Text(selectedDateOption, fontSize = 12.sp) }
+                        )
+                    } else if (selectedDateRange == "Custom") {
+                        FilterChip(
+                            selected = customStartDate != 0L,
+                            onClick = { datePickerVisible = true },
+                            label = { Text(if (customStartDate == 0L) "Select Range" else "Custom Range", fontSize = 12.sp) }
+                        )
+                    }
                 }
             }
 
@@ -268,7 +332,7 @@ fun ChartDetailsScreen(
                     
                     if (sortedScores.isEmpty()) {
                         Text(
-                            text = "No scores recorded for this chart.",
+                            text = "No scores matching date filters.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                             modifier = Modifier.padding(top = 8.dp)
@@ -349,11 +413,6 @@ fun ChartDetailsScreen(
                         }
                     } else {
                         filteredOtherCharts.forEach { chart ->
-                            // For play count, we'd ideally have it from the query.
-                            // Since we don't yet, let's keep it generic or add a placeholder text.
-                            // Wait, I should probably implement a way to get the count.
-                            // I'll add a helper flow to get counts.
-                            
                             val playCount by scoreDao.getTrackCountForChart(configId, songTitle, chart.difficultyName, chart.difficultyVal)
                                 .collectAsState(initial = 0)
 
@@ -388,6 +447,74 @@ fun ChartDetailsScreen(
         }
     }
 
+    // --- BOTTOM SHEETS & DIALOGS ---
+    if (currentFilterSheet != DetailFilterSheet.NONE) {
+        ModalBottomSheet(onDismissRequest = { currentFilterSheet = DetailFilterSheet.NONE }) {
+            Column(modifier = Modifier.fillMaxWidth().padding(16.dp).navigationBarsPadding()) {
+                Text(
+                    text = when(currentFilterSheet) {
+                        DetailFilterSheet.DATE_RANGE -> "Select Date Range"
+                        DetailFilterSheet.DATE_PERIOD -> "Select $selectedDateRange"
+                        else -> ""
+                    },
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+
+                when (currentFilterSheet) {
+                    DetailFilterSheet.DATE_RANGE -> {
+                        dateRanges.forEach { r ->
+                            ListItem(
+                                headlineContent = { Text(r) },
+                                modifier = Modifier.clickable { 
+                                    selectedDateRange = r
+                                    if (r == "Custom") datePickerVisible = true else currentFilterSheet = DetailFilterSheet.NONE
+                                }
+                            )
+                        }
+                    }
+                    DetailFilterSheet.DATE_PERIOD -> {
+                        LazyColumn(modifier = Modifier.fillMaxWidth().heightIn(max = 400.dp)) {
+                            items(dateOptions) { opt ->
+                                ListItem(
+                                    headlineContent = { Text(opt) },
+                                    modifier = Modifier.clickable { 
+                                        selectedDateOption = opt
+                                        currentFilterSheet = DetailFilterSheet.NONE 
+                                    }
+                                )
+                            }
+                        }
+                    }
+                    else -> {}
+                }
+                Spacer(modifier = Modifier.height(24.dp))
+            }
+        }
+    }
+
+    if (datePickerVisible) {
+        val state = rememberDateRangePickerState()
+        Dialog(onDismissRequest = { datePickerVisible = false }, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+            Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Text("Select Date Range", style = MaterialTheme.typography.titleLarge)
+                        IconButton(onClick = { datePickerVisible = false }) { Icon(Icons.Default.Close, null) }
+                    }
+                    DateRangePicker(state = state, modifier = Modifier.weight(1f))
+                    Button(modifier = Modifier.fillMaxWidth(), onClick = { 
+                        customStartDate = state.selectedStartDateMillis ?: 0L
+                        customEndDate = state.selectedEndDateMillis?.let { it + 86400000 - 1 } ?: Long.MAX_VALUE
+                        selectedDateRange = "Custom"
+                        datePickerVisible = false
+                        currentFilterSheet = DetailFilterSheet.NONE 
+                    }) { Text("Apply Range") }
+                }
+            }
+        }
+    }
+
     if (selectedScoreRecord != null && gameConfig != null) {
         ScoreDetailsDialog(
             scoreRecord = selectedScoreRecord!!,
@@ -398,7 +525,18 @@ fun ChartDetailsScreen(
             onGameDetails = {
                 selectedScoreRecord = null
                 onGameClick(configId)
+            },
+            onEdit = {
+                scoreToEdit = selectedScoreRecord
+                selectedScoreRecord = null
             }
+        )
+    }
+
+    if (scoreToEdit != null) {
+        com.example.ritsu.ui.screens.debug.ManualEntryDialog(
+            initialRecord = scoreToEdit,
+            onDismiss = { scoreToEdit = null }
         )
     }
 }

@@ -7,7 +7,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.FilterAlt
@@ -26,7 +25,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -37,6 +35,8 @@ import com.example.ritsu.data.GameConfigData
 import com.example.ritsu.data.RitsuDatabase
 import com.example.ritsu.ui.components.GraphSeries
 import com.example.ritsu.ui.components.ScoreDetailsDialog
+import com.example.ritsu.ui.navigation.DetailFilterSheet
+import com.example.ritsu.ui.utils.DateUtils
 import kotlinx.serialization.json.Json
 import java.text.SimpleDateFormat
 import java.util.*
@@ -56,10 +56,6 @@ private fun getNiceInterval(range: Float, targetSteps: Int): Float {
     return niceResidual * magnitude
 }
 
-enum class GraphFilterSheet {
-    NONE, DIFF_NAME, DATE_RANGE, DATE_PERIOD
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GraphDetailScreen(
@@ -69,7 +65,9 @@ fun GraphDetailScreen(
     difficultyName: String? = null,
     difficultyVal: String? = null,
     isNormalized: Boolean = false,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onChartDetails: (Long, String, String, String) -> Unit = { _, _, _, _ -> },
+    onGameDetails: (Long) -> Unit = {}
 ) {
     val context = LocalContext.current
     val database = remember { RitsuDatabase.getDatabase(context) }
@@ -99,71 +97,31 @@ fun GraphDetailScreen(
         mutableStateOf(min..max) 
     }
     
-    // Date Filtering (DataScreen port)
+    // Date Filtering
     val dateRanges = listOf("Day", "Week", "Month", "Year", "All Time", "Custom")
     var selectedDateRange by remember { mutableStateOf("All Time") }
-    
-    val dateOptions = remember(selectedDateRange, scores) {
-        val list = mutableListOf<String>()
-        val sdf = SimpleDateFormat("MMM d, yyyy", Locale.getDefault())
-        when (selectedDateRange) {
-            "Day" -> {
-                for (i in 0..30) {
-                    val d = Calendar.getInstance()
-                    d.add(Calendar.DAY_OF_YEAR, -i)
-                    list.add(when (i) { 0 -> "Today"; 1 -> "Yesterday"; else -> sdf.format(d.time) })
-                }
-            }
-            "Week" -> {
-                for (i in 0..12) {
-                    val d = Calendar.getInstance()
-                    d[Calendar.DAY_OF_WEEK] = Calendar.MONDAY
-                    d.add(Calendar.WEEK_OF_YEAR, -i)
-                    val end = d.clone() as Calendar
-                    end.add(Calendar.DAY_OF_YEAR, 6)
-                    list.add(if (i == 0) "This Week" else "${sdf.format(d.time)} - ${sdf.format(end.time)}")
-                }
-            }
-            "Month" -> {
-                val monthSdf = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
-                for (i in 0..12) {
-                    val d = Calendar.getInstance()
-                    d.add(Calendar.MONTH, -i)
-                    list.add(monthSdf.format(d.time))
-                }
-            }
-            "Year" -> {
-                val year = Calendar.getInstance()[Calendar.YEAR]
-                for (i in 0..5) list.add((year - i).toString())
-            }
-            "All Time" -> list.add("Entire History")
-            "Custom" -> list.add("Select Custom Range...")
-        }
-        list
-    }
-
+    val dateOptions = remember(selectedDateRange) { DateUtils.getDateOptions(selectedDateRange) }
     var selectedDateOption by remember(selectedDateRange) { mutableStateOf(dateOptions.firstOrNull() ?: "") }
     var customStartDate by remember { mutableLongStateOf(0L) }
     var customEndDate by remember { mutableLongStateOf(Long.MAX_VALUE) }
     
     // UI State
     var normalized by remember { mutableStateOf(isNormalized) }
-    var currentFilterSheet by remember { mutableStateOf(GraphFilterSheet.NONE) }
+    var currentFilterSheet by remember { mutableStateOf(DetailFilterSheet.NONE) }
     var datePickerVisible by remember { mutableStateOf(false) }
+    var diffFilterVisible by remember { mutableStateOf(false) }
     
     // Graph State
     var zoomScale by remember { mutableFloatStateOf(1f) }
     var panOffset by remember { mutableStateOf(Offset.Zero) }
     var selectedPointIndex by remember { mutableStateOf<Int?>(null) }
     var showScoreDetails by remember { mutableStateOf<FullScoreRecord?>(null) }
+    var scoreToEdit by remember { mutableStateOf<FullScoreRecord?>(null) }
 
     val textMeasurer = rememberTextMeasurer()
 
     // --- DATA FILTERING ---
     val filteredScores = remember(scores, configId, songTitle, selectedDiffNames, diffValueRange, selectedDateRange, selectedDateOption, customStartDate, customEndDate) {
-        val sdfDay = SimpleDateFormat("MMM d, yyyy", Locale.getDefault())
-        val sdfMonth = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
-
         scores.filter { record ->
             val s = record.genericScore
             val dVal = s.difficultySortValue
@@ -175,35 +133,13 @@ fun GraphDetailScreen(
 
             if (!matchesBasic) return@filter false
 
-            val playDate = Date(s.playTimestamp)
-            val playCalendar = Calendar.getInstance().apply { time = playDate }
-            
-            when (selectedDateRange) {
-                "Day" -> {
-                    when (selectedDateOption) {
-                        "Today" -> isSameDay(playCalendar, Calendar.getInstance())
-                        "Yesterday" -> isSameDay(playCalendar, Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -1) })
-                        else -> try { sdfDay.format(playDate) == selectedDateOption } catch(e: Exception) { false }
-                    }
-                }
-                "Week" -> {
-                    val weekRange = selectedDateOption.split(" - ")
-                    if (weekRange.size == 2) {
-                        try {
-                            val start = sdfDay.parse(weekRange[0]); val end = sdfDay.parse(weekRange[1])
-                            if (start != null && end != null) playDate.after(start) && playDate.before(Date(end.time + 86400000)) else false
-                        } catch (e: Exception) { false }
-                    } else if (selectedDateOption == "This Week") {
-                        val startOfWeek = Calendar.getInstance().apply { set(Calendar.DAY_OF_WEEK, Calendar.MONDAY); set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0) }
-                        playDate.after(startOfWeek.time)
-                    } else false
-                }
-                "Month" -> sdfMonth.format(playDate) == selectedDateOption
-                "Year" -> playCalendar[Calendar.YEAR].toString() == selectedDateOption
-                "All Time" -> true
-                "Custom" -> s.playTimestamp >= customStartDate && s.playTimestamp <= customEndDate
-                else -> false
-            }
+            DateUtils.filterByDate(
+                s.playTimestamp,
+                selectedDateRange,
+                selectedDateOption,
+                customStartDate,
+                customEndDate
+            )
         }.sortedBy { it.genericScore.playTimestamp }
     }
 
@@ -263,18 +199,18 @@ fun GraphDetailScreen(
             }
             FilterChip(
                 selected = selectedDiffNames.size != allDiffNames.size,
-                onClick = { currentFilterSheet = GraphFilterSheet.DIFF_NAME },
+                onClick = { diffFilterVisible = true },
                 label = { Text(if (selectedDiffNames.size == allDiffNames.size) "Difficulty" else "${selectedDiffNames.size} Sel", fontSize = 12.sp) },
                 leadingIcon = { Icon(Icons.Default.FilterAlt, null, modifier = Modifier.size(16.dp)) }
             )
             FilterChip(
                 selected = selectedDateRange != "All Time",
-                onClick = { currentFilterSheet = GraphFilterSheet.DATE_RANGE },
+                onClick = { currentFilterSheet = DetailFilterSheet.DATE_RANGE },
                 label = { Text(selectedDateRange, fontSize = 12.sp) },
                 leadingIcon = { Icon(Icons.Default.CalendarMonth, null, modifier = Modifier.size(16.dp)) }
             )
             if (selectedDateRange != "All Time" && selectedDateRange != "Custom") {
-                FilterChip(selected = true, onClick = { currentFilterSheet = GraphFilterSheet.DATE_PERIOD }, label = { Text(selectedDateOption, fontSize = 12.sp) })
+                FilterChip(selected = true, onClick = { currentFilterSheet = DetailFilterSheet.DATE_PERIOD }, label = { Text(selectedDateOption, fontSize = 12.sp) })
             } else if (selectedDateRange == "Custom") {
                 FilterChip(selected = customStartDate != 0L, onClick = { datePickerVisible = true }, label = { Text(if (customStartDate == 0L) "Select Range" else "Custom Range", fontSize = 12.sp) })
             }
@@ -480,47 +416,53 @@ fun GraphDetailScreen(
     }
 
     // --- MODAL BOTTOM SHEETS ---
-    if (currentFilterSheet != GraphFilterSheet.NONE) {
-        ModalBottomSheet(onDismissRequest = { currentFilterSheet = GraphFilterSheet.NONE }) {
+    if (currentFilterSheet != DetailFilterSheet.NONE) {
+        ModalBottomSheet(onDismissRequest = { currentFilterSheet = DetailFilterSheet.NONE }) {
             Column(modifier = Modifier.fillMaxWidth().padding(16.dp).navigationBarsPadding()) {
                 Text(text = when(currentFilterSheet) {
-                    GraphFilterSheet.DIFF_NAME -> "Filter Difficulties"
-                    GraphFilterSheet.DATE_RANGE -> "Select Date Range"
-                    GraphFilterSheet.DATE_PERIOD -> "Select $selectedDateRange"
+                    DetailFilterSheet.DATE_RANGE -> "Select Date Range"
+                    DetailFilterSheet.DATE_PERIOD -> "Select $selectedDateRange"
                     else -> ""
                 }, style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(bottom = 16.dp))
 
                 when (currentFilterSheet) {
-                    GraphFilterSheet.DIFF_NAME -> {
-                        LazyColumn(modifier = Modifier.fillMaxWidth().heightIn(max = 400.dp)) {
-                            items(allDiffNames) { name ->
-                                Row(modifier = Modifier.fillMaxWidth().clickable { selectedDiffNames = if (selectedDiffNames.contains(name)) selectedDiffNames - name else selectedDiffNames + name }.padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                                    Checkbox(checked = selectedDiffNames.contains(name), onCheckedChange = null)
-                                    Spacer(modifier = Modifier.width(12.dp))
-                                    Text(name)
-                                }
-                            }
-                        }
-                    }
-                    GraphFilterSheet.DATE_RANGE -> {
+                    DetailFilterSheet.DATE_RANGE -> {
                         dateRanges.forEach { r ->
                             ListItem(
                                 headlineContent = { Text(r) },
                                 modifier = Modifier.clickable { 
                                     selectedDateRange = r
-                                    if (r == "Custom") datePickerVisible = true else currentFilterSheet = GraphFilterSheet.NONE
+                                    if (r == "Custom") datePickerVisible = true else currentFilterSheet = DetailFilterSheet.NONE
                                 }
                             )
                         }
                     }
-                    GraphFilterSheet.DATE_PERIOD -> {
+                    DetailFilterSheet.DATE_PERIOD -> {
                         LazyColumn(modifier = Modifier.fillMaxWidth().heightIn(max = 400.dp)) {
                             items(dateOptions) { opt ->
-                                ListItem(headlineContent = { Text(opt) }, modifier = Modifier.clickable { selectedDateOption = opt; currentFilterSheet = GraphFilterSheet.NONE })
+                                ListItem(headlineContent = { Text(opt) }, modifier = Modifier.clickable { selectedDateOption = opt; currentFilterSheet = DetailFilterSheet.NONE })
                             }
                         }
                     }
                     else -> {}
+                }
+                Spacer(modifier = Modifier.height(24.dp))
+            }
+        }
+    }
+
+    if (diffFilterVisible) {
+        ModalBottomSheet(onDismissRequest = { diffFilterVisible = false }) {
+            Column(modifier = Modifier.fillMaxWidth().padding(16.dp).navigationBarsPadding()) {
+                Text(text = "Filter Difficulties", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(bottom = 16.dp))
+                LazyColumn(modifier = Modifier.fillMaxWidth().heightIn(max = 400.dp)) {
+                    items(allDiffNames) { name ->
+                        Row(modifier = Modifier.fillMaxWidth().clickable { selectedDiffNames = if (selectedDiffNames.contains(name)) selectedDiffNames - name else selectedDiffNames + name }.padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(checked = selectedDiffNames.contains(name), onCheckedChange = null)
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(name)
+                        }
+                    }
                 }
                 Spacer(modifier = Modifier.height(24.dp))
             }
@@ -537,15 +479,39 @@ fun GraphDetailScreen(
                         IconButton(onClick = { datePickerVisible = false }) { Icon(Icons.Default.Close, null) }
                     }
                     DateRangePicker(state = state, modifier = Modifier.weight(1f))
-                    Button(modifier = Modifier.fillMaxWidth(), onClick = { customStartDate = state.selectedStartDateMillis ?: 0L; customEndDate = state.selectedEndDateMillis?.let { it + 86400000 - 1 } ?: Long.MAX_VALUE; selectedDateRange = "Custom"; datePickerVisible = false; currentFilterSheet = GraphFilterSheet.NONE }) { Text("Apply Range") }
+                    Button(modifier = Modifier.fillMaxWidth(), onClick = { customStartDate = state.selectedStartDateMillis ?: 0L; customEndDate = state.selectedEndDateMillis?.let { it + 86400000 - 1 } ?: Long.MAX_VALUE; selectedDateRange = "Custom"; datePickerVisible = false; currentFilterSheet = DetailFilterSheet.NONE }) { Text("Apply Range") }
                 }
             }
         }
     }
 
     if (showScoreDetails != null && gameConfig != null) {
-        ScoreDetailsDialog(scoreRecord = showScoreDetails!!, gameConfig = gameConfig, scoreDao = scoreDao, onDismiss = { showScoreDetails = null })
+        ScoreDetailsDialog(
+            scoreRecord = showScoreDetails!!,
+            gameConfig = gameConfig,
+            scoreDao = scoreDao,
+            onDismiss = { showScoreDetails = null },
+            onEdit = {
+                scoreToEdit = showScoreDetails
+                showScoreDetails = null
+            },
+            onChartDetails = {
+                val s = showScoreDetails!!.genericScore
+                showScoreDetails = null
+                onChartDetails(s.configId, s.songTitle, s.difficultyName, s.difficultyVal)
+            },
+            onGameDetails = {
+                val s = showScoreDetails!!.genericScore
+                showScoreDetails = null
+                onGameDetails(s.configId)
+            }
+        )
+    }
+
+    if (scoreToEdit != null) {
+        com.example.ritsu.ui.screens.debug.ManualEntryDialog(
+            initialRecord = scoreToEdit,
+            onDismiss = { scoreToEdit = null }
+        )
     }
 }
-
-private fun isSameDay(c1: Calendar, c2: Calendar) = c1[Calendar.YEAR] == c2[Calendar.YEAR] && c1[Calendar.DAY_OF_YEAR] == c2[Calendar.DAY_OF_YEAR]

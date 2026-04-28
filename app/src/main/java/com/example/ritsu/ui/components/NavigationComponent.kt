@@ -1,5 +1,8 @@
 package com.example.ritsu.ui.components
 
+import android.Manifest
+import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.ImageDecoder
 import android.media.ExifInterface
 import android.os.Build
@@ -35,7 +38,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.example.ritsu.Screen
+import androidx.core.content.ContextCompat
+import com.example.ritsu.ui.navigation.Screen
 import com.example.ritsu.data.GameConfig
 import com.example.ritsu.data.GameConfigData
 import com.example.ritsu.data.GenericScore
@@ -44,6 +48,8 @@ import com.example.ritsu.data.RitsuDatabase
 import com.example.ritsu.data.ScoreDetail
 import com.example.ritsu.data.ScoreRepository
 import com.example.ritsu.data.AccuracyCalculator
+import com.example.ritsu.service.NotificationService
+import com.example.ritsu.service.ServiceControlActivity
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 
@@ -62,6 +68,17 @@ fun NavigationComponent(
     var showMenu by remember { mutableStateOf(value = false) }
     var showConfigDialog by remember { mutableStateOf(false) }
     var selectedConfigForGallery by remember { mutableStateOf<GameConfig?>(null) }
+
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            val intent = Intent(context, ServiceControlActivity::class.java).apply {
+                putExtra(ServiceControlActivity.EXTRA_COMMAND, ServiceControlActivity.COMMAND_START_SERVICE)
+            }
+            context.startActivity(intent)
+        }
+    }
 
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickMultipleVisualMedia()
@@ -176,7 +193,24 @@ fun NavigationComponent(
             ) {
                 DropdownMenuItem(
                     text = { Text("Activate Notification Service") },
-                    onClick = { showMenu = false },
+                    onClick = { 
+                        showMenu = false
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+                                val intent = Intent(context, ServiceControlActivity::class.java).apply {
+                                    putExtra(ServiceControlActivity.EXTRA_COMMAND, ServiceControlActivity.COMMAND_START_SERVICE)
+                                }
+                                context.startActivity(intent)
+                            } else {
+                                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            }
+                        } else {
+                            val intent = Intent(context, ServiceControlActivity::class.java).apply {
+                                putExtra(ServiceControlActivity.EXTRA_COMMAND, ServiceControlActivity.COMMAND_START_SERVICE)
+                            }
+                            context.startActivity(intent)
+                        }
+                    },
                     leadingIcon = {
                         Icon(
                             Icons.Default.NotificationsActive,

@@ -20,6 +20,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ritsu.R
+import com.example.ritsu.ui.navigation.Screen
 import com.example.ritsu.data.AccuracyCalculator
 import com.example.ritsu.data.FullScoreRecord
 import com.example.ritsu.data.GameConfigData
@@ -104,6 +105,7 @@ fun DataScreen(
     var topScoresGameFilter by remember { mutableStateOf("All") }
     val topChartsSortMode = "Plays"
     var selectedScoreForDetails by remember { mutableStateOf<FullScoreRecord?>(null) }
+    var scoreToEdit by remember { mutableStateOf<FullScoreRecord?>(null) }
 
     // Data filtering and aggregation logic
     val filteredScores = remember(scores, selectedOption, selectedRange) {
@@ -438,14 +440,14 @@ fun DataScreen(
                             .padding(horizontal = 8.dp),
                         onCardClick = { 
                             val encodedOption = android.net.Uri.encode(selectedOption)
-                            navController.navigate(com.example.ritsu.Screen.TopGames.name + "/$selectedRange/$encodedOption") 
+                            navController.navigate(Screen.TopGames.name + "/$selectedRange/$encodedOption") 
                         },
                         onMoreClick = { 
                             val encodedOption = android.net.Uri.encode(selectedOption)
-                            navController.navigate(com.example.ritsu.Screen.TopGames.name + "/$selectedRange/$encodedOption") 
+                            navController.navigate(Screen.TopGames.name + "/$selectedRange/$encodedOption") 
                         },
                         onGameClick = { game ->
-                            navController.navigate(com.example.ritsu.Screen.GameDetails.name + "/${game.configId}")
+                            navController.navigate(Screen.GameDetails.name + "/${game.configId}")
                         }
                     )
                 }
@@ -459,11 +461,11 @@ fun DataScreen(
                             .padding(horizontal = 8.dp),
                         onCardClick = { 
                             val encodedOption = android.net.Uri.encode(selectedOption)
-                            navController.navigate(com.example.ritsu.Screen.TopCharts.name + "/$selectedRange/$encodedOption") 
+                            navController.navigate(Screen.TopCharts.name + "/$selectedRange/$encodedOption") 
                         },
                         onMoreClick = { 
                             val encodedOption = android.net.Uri.encode(selectedOption)
-                            navController.navigate(com.example.ritsu.Screen.TopCharts.name + "/$selectedRange/$encodedOption") 
+                            navController.navigate(Screen.TopCharts.name + "/$selectedRange/$encodedOption") 
                         },
                         onChartClick = { chart ->
                             if (topChartsSortMode == "Plays") {
@@ -472,7 +474,7 @@ fun DataScreen(
                                 val encodedTitle = android.net.Uri.encode(chart.songTitle)
                                 val encodedDiffName = android.net.Uri.encode(chart.difficultyName)
                                 val encodedDiffVal = android.net.Uri.encode(chart.difficultyVal)
-                                navController.navigate(com.example.ritsu.Screen.ChartDetails.name + "/$configId/$encodedTitle/$encodedDiffName/$encodedDiffVal")
+                                navController.navigate(Screen.ChartDetails.name + "/$configId/$encodedTitle/$encodedDiffName/$encodedDiffVal")
                             } else {
                                 selectedScoreForDetails = filteredScores.find { it.genericScore.id == chart.scoreId }
                             }
@@ -491,12 +493,12 @@ fun DataScreen(
                         onCardClick = { 
                             val encodedOption = android.net.Uri.encode(selectedOption)
                             val encodedGameFilter = android.net.Uri.encode(topScoresGameFilter)
-                            navController.navigate(com.example.ritsu.Screen.TopScores.name + "/$selectedRange/$encodedOption/$topScoresSortMode/$encodedGameFilter") 
+                            navController.navigate(Screen.TopScores.name + "/$selectedRange/$encodedOption/$topScoresSortMode/$encodedGameFilter") 
                         },
                         onMoreClick = { 
                             val encodedOption = android.net.Uri.encode(selectedOption)
                             val encodedGameFilter = android.net.Uri.encode(topScoresGameFilter)
-                            navController.navigate(com.example.ritsu.Screen.TopScores.name + "/$selectedRange/$encodedOption/$topScoresSortMode/$encodedGameFilter") 
+                            navController.navigate(Screen.TopScores.name + "/$selectedRange/$encodedOption/$topScoresSortMode/$encodedGameFilter") 
                         },
                         onScoreClick = { item ->
                             selectedScoreForDetails = filteredScores.find { it.genericScore.id == item.scoreId }
@@ -561,15 +563,26 @@ fun DataScreen(
                     val encodedDiffName = android.net.Uri.encode(s.difficultyName)
                     val encodedDiffVal = android.net.Uri.encode(s.difficultyVal)
                     selectedScoreForDetails = null
-                    navController.navigate(com.example.ritsu.Screen.ChartDetails.name + "/${s.configId}/$encodedTitle/$encodedDiffName/$encodedDiffVal")
+                    navController.navigate(Screen.ChartDetails.name + "/${s.configId}/$encodedTitle/$encodedDiffName/$encodedDiffVal")
                 },
                 onGameDetails = {
                     val s = selectedScoreForDetails!!.genericScore
                     selectedScoreForDetails = null
-                    navController.navigate(com.example.ritsu.Screen.GameDetails.name + "/${s.configId}")
+                    navController.navigate(Screen.GameDetails.name + "/${s.configId}")
+                },
+                onEdit = {
+                    scoreToEdit = selectedScoreForDetails
+                    selectedScoreForDetails = null
                 }
             )
         }
+    }
+
+    if (scoreToEdit != null) {
+        com.example.ritsu.ui.screens.debug.ManualEntryDialog(
+            initialRecord = scoreToEdit,
+            onDismiss = { scoreToEdit = null }
+        )
     }
 }
 

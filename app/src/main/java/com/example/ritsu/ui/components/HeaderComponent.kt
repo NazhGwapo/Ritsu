@@ -12,7 +12,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import com.example.ritsu.Screen
+import com.example.ritsu.ui.navigation.Screen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

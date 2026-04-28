@@ -32,7 +32,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ritsu.R
-import com.example.ritsu.Screen
+import com.example.ritsu.ui.navigation.Screen
 import com.example.ritsu.data.FullScoreRecord
 import com.example.ritsu.data.GameConfigData
 import com.example.ritsu.data.RitsuDatabase
