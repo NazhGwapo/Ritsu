@@ -1,4 +1,4 @@
-package com.example.ritsu.ui
+package com.example.ritsu.ui.screens.debug
 
 import android.graphics.Bitmap
 import android.graphics.ImageDecoder
@@ -17,11 +17,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -30,9 +26,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
-import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -50,11 +44,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.ritsu.data.GameConfig
@@ -65,24 +56,6 @@ import com.example.ritsu.data.RitsuDatabase
 import com.google.mlkit.vision.text.Text
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
-
-@Composable
-fun DebugScreen() {
-    var showOcrDialog by remember { mutableStateOf(false) }
-
-    LazyColumn(modifier = Modifier.fillMaxSize()) {
-        item {
-            ListItem(
-                headlineContent = { Text("OCR test") },
-                modifier = Modifier.clickable { showOcrDialog = true }
-            )
-        }
-    }
-
-    if (showOcrDialog) {
-        OcrTestDialog(onDismiss = { showOcrDialog = false })
-    }
-}
 
 @Composable
 fun OcrTestDialog(onDismiss: () -> Unit) {
@@ -121,13 +94,13 @@ fun OcrTestDialog(onDismiss: () -> Unit) {
                     selectedConfigData = gameConfigData
                     
                     val ocrManager = OCRManager()
-                    val textResult = ocrManager.recognizeText(bitmap)
-                    fullTextResult = textResult
+                    // Use processImage which handles all recognizers
+                    val results = ocrManager.processImage(bitmap, gameConfigData)
+                    ocrResults = results
                     
-                    if (textResult != null) {
-                        val results = ocrManager.processImage(bitmap, gameConfigData)
-                        ocrResults = results
-                    }
+                    // recognizeText is now internal/private to OCRManager, so we can't easily get fullTextResult
+                    // for visualization here without exposing it. For now, let's just clear it.
+                    fullTextResult = null
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
@@ -156,7 +129,7 @@ fun OcrTestDialog(onDismiss: () -> Unit) {
             ) {
                 Text(text = "OCR Test", style = MaterialTheme.typography.headlineSmall)
 
-                Spacer(modifier = Modifier.padding(8.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
                 Box {
                     Row(
@@ -184,7 +157,7 @@ fun OcrTestDialog(onDismiss: () -> Unit) {
                     }
                 }
 
-                Spacer(modifier = Modifier.padding(8.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
                 Button(
                     onClick = {
@@ -199,7 +172,7 @@ fun OcrTestDialog(onDismiss: () -> Unit) {
                 }
 
                 selectedBitmap?.let { bitmap ->
-                    Spacer(modifier = Modifier.padding(8.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -243,7 +216,7 @@ fun OcrTestDialog(onDismiss: () -> Unit) {
                                 config.difficultyNameRect?.let { drawRect(it, Color.Yellow) }
                                 config.difficultyValRect?.let { drawRect(it, Color.Cyan) }
                                 config.rankRect?.let { drawRect(it, Color.Magenta) }
-                                config.fields.forEach { field ->
+                                config.allFieldsWithCategory.forEach { (field, _) ->
                                     field.ocrRect?.let { drawRect(it, Color.White) }
                                 }
 
@@ -274,7 +247,7 @@ fun OcrTestDialog(onDismiss: () -> Unit) {
                 }
 
                 ocrResults?.let { results ->
-                    Spacer(modifier = Modifier.padding(8.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
                     Column(
                         modifier = Modifier.fillMaxWidth()
                     ) {
@@ -288,7 +261,7 @@ fun OcrTestDialog(onDismiss: () -> Unit) {
                     }
                 }
 
-                Spacer(modifier = Modifier.padding(8.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
                 Button(
                     onClick = onDismiss,

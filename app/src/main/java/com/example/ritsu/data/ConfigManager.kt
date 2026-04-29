@@ -29,7 +29,7 @@ object ConfigManager {
                     val config = GameConfig(
                         gameName = decoded.gameName,
                         configData = jsonString,
-                        configVersion = decoded.configVersion
+                        configVersion = decoded.configVersion,
                     )
 
                     val database = RitsuDatabase.getDatabase(context)
@@ -42,7 +42,7 @@ object ConfigManager {
                             "Imported ${decoded.gameName} (v${decoded.configVersion})"
                         }
                         decoded.configVersion > existing.configVersion -> {
-                            dao.updateConfig(config.copy(id = existing.id))
+                            dao.updateConfig(config.copy(id = existing.id, displayIconUri = existing.displayIconUri))
                             "Updated ${decoded.gameName} to v${decoded.configVersion}"
                         }
                         else -> "Config ${decoded.gameName} is already up to date (v${existing.configVersion})"
@@ -56,6 +56,24 @@ object ConfigManager {
                 e.printStackTrace()
                 withContext(Dispatchers.Main) {
                     Toast.makeText(context, "Import failed: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
+
+    fun handleExport(context: Context, uri: Uri, configData: String) {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                context.contentResolver.openOutputStream(uri)?.use { outputStream ->
+                    outputStream.write(configData.toByteArray())
+                }
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "Configuration exported successfully", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "Export failed: ${e.message}", Toast.LENGTH_LONG).show()
                 }
             }
         }
