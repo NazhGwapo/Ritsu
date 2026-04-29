@@ -15,7 +15,7 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun DifficultyBadge(name: String, value: String) {
     val badgeText = remember(name, value) {
-        val n = name.trim().takeIf { it.isNotBlank() && it != "Unknown" }
+        val n = name.trim().takeIf { (it.isNotBlank() && it != "Unknown") }
         val v = value.trim().takeIf { it.isNotBlank() && it != "0" && it != "0.0" }
         
         when {
@@ -29,7 +29,7 @@ fun DifficultyBadge(name: String, value: String) {
     if (badgeText.isNotBlank()) {
         Surface(
             color = MaterialTheme.colorScheme.primaryContainer,
-            shape = RoundedCornerShape(4.dp)
+            shape = RoundedCornerShape(4.dp),
         ) {
             Text(
                 text = badgeText,

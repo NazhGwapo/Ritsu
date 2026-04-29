@@ -12,10 +12,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -30,16 +30,16 @@ data class TopGameItem(
     val configId: Long = 0,
     val achievements: List<Pair<String, Int>> = emptyList(),
     val displayIconUri: String? = null,
-    val iconRes: Int? = null
+    val iconRes: Int? = null,
 )
 
 @Composable
 fun TopGamesCard(
     games: List<TopGameItem>,
+    modifier: Modifier = Modifier,
     onCardClick: () -> Unit = {},
     onGameClick: (TopGameItem) -> Unit = {},
     onMoreClick: () -> Unit = {},
-    modifier: Modifier = Modifier
 ) {
     ElevatedCard(
         onClick = onCardClick,
@@ -65,7 +65,7 @@ fun TopGamesCard(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 games.take(4).forEach { game ->
-                    GameListItem(game, onClick = { onGameClick(game) })
+                    GameListItem(game) { onGameClick(game) }
                 }
             }
 
@@ -97,18 +97,24 @@ fun TopGamesCard(
 }
 
 @Composable
-fun GameListItem(game: TopGameItem, onClick: () -> Unit) {
+fun GameListItem(game: TopGameItem, isCompact: Boolean = false, onClick: () -> Unit) {
+    val iconSize = if (isCompact) 40.dp else 56.dp
+    val textStyle = if (isCompact) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.bodyLarge
+    val subTextStyle = if (isCompact) MaterialTheme.typography.labelSmall else MaterialTheme.typography.bodySmall
+    val padding = if (isCompact) 2.dp else 4.dp
+    val spacing = if (isCompact) 8.dp else 12.dp
+
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
             .clickable(onClick = onClick)
-            .padding(4.dp)
+            .padding(padding)
     ) {
         Box(
             modifier = Modifier
-                .size(56.dp)
+                .size(iconSize)
                 .clip(RoundedCornerShape(8.dp))
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         ) {
@@ -138,13 +144,15 @@ fun GameListItem(game: TopGameItem, onClick: () -> Unit) {
             }
         }
 
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(spacing))
 
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = "${game.rank}. ${game.gameName}",
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium
+                style = textStyle,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
             
             if (game.achievements.isNotEmpty()) {
@@ -152,7 +160,7 @@ fun GameListItem(game: TopGameItem, onClick: () -> Unit) {
                     modifier = Modifier
                         .padding(top = 2.dp)
                         .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(if (isCompact) 2.dp else 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     game.achievements.forEach { (label, count) ->
@@ -166,7 +174,7 @@ fun GameListItem(game: TopGameItem, onClick: () -> Unit) {
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                fontSize = 10.sp
+                                fontSize = if (isCompact) 8.sp else 10.sp
                             )
                         }
                     }
@@ -175,7 +183,7 @@ fun GameListItem(game: TopGameItem, onClick: () -> Unit) {
 
             Text(
                 text = "${game.playCount} plays",
-                style = MaterialTheme.typography.bodySmall,
+                style = subTextStyle,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
         }

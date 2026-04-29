@@ -9,7 +9,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -19,7 +18,7 @@ import java.util.*
 @Serializable
 data class ExportData(
     val exportTimestamp: Long,
-    val scores: List<FullScoreRecordSerializable>
+    val scores: List<FullScoreRecordSerializable>,
 )
 
 @Serializable
@@ -151,7 +150,7 @@ object DataManager {
                 val database = RitsuDatabase.getDatabase(context)
                 val dao = database.scoreDao()
                 val currentConfigs = dao.getAllConfigs().first()
-                val nameToConfigId = currentConfigs.associate { it.gameName to it.id }
+                val nameToConfigId = currentConfigs.associateBy({ it.gameName }, { it.id })
 
                 context.contentResolver.openInputStream(uri)?.use { inputStream ->
                     val reader = BufferedReader(InputStreamReader(inputStream))
@@ -162,19 +161,21 @@ object DataManager {
                     data.scores.forEach { record ->
                         val targetConfigId = nameToConfigId[record.gameName]
                         if (targetConfigId != null) {
-                            val scoreId = dao.insertScore(GenericScore(
-                                configId = targetConfigId,
-                                songTitle = record.genericScore.songTitle,
-                                difficultyName = record.genericScore.difficultyName,
-                                difficultyVal = record.genericScore.difficultyVal,
-                                difficultySortValue = record.genericScore.difficultySortValue,
-                                totalScore = record.genericScore.totalScore,
-                                maxCombo = record.genericScore.maxCombo,
-                                accuracy = record.genericScore.accuracy,
-                                playRank = record.genericScore.playRank,
-                                playTimestamp = record.genericScore.playTimestamp,
-                                importTimestamp = System.currentTimeMillis()
-                            ))
+                            val scoreId = dao.insertScore(
+                                GenericScore(
+                                    configId = targetConfigId,
+                                    songTitle = record.genericScore.songTitle,
+                                    difficultyName = record.genericScore.difficultyName,
+                                    difficultyVal = record.genericScore.difficultyVal,
+                                    difficultySortValue = record.genericScore.difficultySortValue,
+                                    totalScore = record.genericScore.totalScore,
+                                    maxCombo = record.genericScore.maxCombo,
+                                    accuracy = record.genericScore.accuracy,
+                                    playRank = record.genericScore.playRank,
+                                    playTimestamp = record.genericScore.playTimestamp,
+                                    importTimestamp = System.currentTimeMillis()
+                                )
+                            )
                             
                             val details = record.details.map { detail ->
                                 ScoreDetail(

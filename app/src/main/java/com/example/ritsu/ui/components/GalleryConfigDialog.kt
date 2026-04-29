@@ -33,14 +33,14 @@ import com.example.ritsu.data.RitsuDatabase
 @Composable
 fun GalleryConfigDialog(
     onDismiss: () -> Unit,
-    onConfigSelected: (GameConfig) -> Unit
+    onConfigSelected: (GameConfig) -> Unit,
 ) {
     val context = LocalContext.current
     val database = remember { RitsuDatabase.getDatabase(context) }
     val configs by database.scoreDao().getAllConfigs().collectAsState(initial = emptyList())
     
     var selectedConfig by remember { mutableStateOf<GameConfig?>(null) }
-    var expanded by remember { mutableStateOf(false) }
+    var expanded by remember { mutableStateOf(value = false) }
 
     AlertDialog(
         onDismissRequest = onDismiss,

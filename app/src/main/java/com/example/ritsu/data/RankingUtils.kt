@@ -9,13 +9,13 @@ object RankingUtils {
     fun calculateRankingValue(
         record: FullScoreRecord,
         config: GameConfig?,
-        sortMode: String // "Accuracy", "Max Combo", or "Score"
+        sortMode: String, // "Accuracy", "Max Combo", or "Score"
     ): Double {
         val totalNoteCount = if (config != null) {
             try {
                 val cData = json.decodeFromString<GameConfigData>(config.configData)
                 AccuracyCalculator.getTotalNoteCount(record.details, cData)
-            } catch (e: Exception) { 0 }
+            } catch (_: Exception) { 0 }
         } else 0
         
         val weight = totalNoteCount.coerceAtLeast(1).toDouble()
@@ -59,14 +59,14 @@ object RankingUtils {
         if (config == null) return emptyList()
         return try {
             val cData = json.decodeFromString<GameConfigData>(config.configData)
-            val booleanFields = cData.allFieldsWithCategory
+            val booleanFields = cData.allFieldsWithCategory.asSequence()
                 .filter { it.first.type == "boolean" }
-                .map { it.first.key to it.first.label }
-                .toMap()
+                .associate { it.first.key to it.first.label }
             
-            record.details
-                .filter { booleanFields.containsKey(it.key) && it.value.lowercase() == "true" }
+            record.details.asSequence()
+                .filter { (booleanFields.containsKey(it.key)) && it.value.lowercase() == "true" }
                 .map { booleanFields[it.key] ?: "" }
+                .toList()
         } catch (_: Exception) {
             emptyList()
         }

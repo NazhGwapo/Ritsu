@@ -48,7 +48,7 @@ fun AppPickerDialog(
                             }
                         },
                         headlineContent = { Text(app.loadLabel(packageManager).toString()) },
-                        modifier = Modifier.clickable { onAppSelected(app) }
+                        modifier = Modifier.clickable { onAppSelected(app) },
                     )
                 }
             }

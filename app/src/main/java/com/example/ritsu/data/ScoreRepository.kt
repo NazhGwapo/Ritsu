@@ -37,21 +37,4 @@ class ScoreRepository(private val scoreDao: ScoreDao) {
         return scoreDao.getAllConfigs()
     }
 
-    /**
-     * Adds or updates a game configuration based on version.
-     */
-    suspend fun upsertConfig(config: GameConfig) {
-        withContext(Dispatchers.IO) {
-            scoreDao.upsertConfig(config)
-        }
-    }
-
-    /**
-     * Adds a new game configuration.
-     */
-    suspend fun insertConfig(config: GameConfig): Long {
-        return withContext(Dispatchers.IO) {
-            scoreDao.insertConfig(config)
-        }
-    }
 }

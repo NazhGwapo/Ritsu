@@ -2,8 +2,7 @@ package com.example.ritsu.ui.components
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -43,9 +42,9 @@ fun HeaderComponent(
                         Screen.GraphDetail -> "Graph Detail"
                     }
                 )
-                if (subtitle != null) {
+                subtitle?.let {
                     Text(
-                        text = subtitle,
+                        text = it,
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
@@ -53,10 +52,10 @@ fun HeaderComponent(
             }
         },
         navigationIcon = {
-            if (currentScreen != Screen.Score && currentScreen != Screen.Data) {
+            if (currentScreen != Screen.Score && (currentScreen != Screen.Data)) {
                 IconButton(onClick = onActionClick) {
                     Icon(
-                        imageVector = Icons.Default.ArrowBack,
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back"
                     )
                 }

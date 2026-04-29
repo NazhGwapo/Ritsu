@@ -19,5 +19,5 @@ data class ThemeConfig(
     val themeMode: AppThemeMode = AppThemeMode.System,
     val colorPalette: ColorPalette = ColorPalette.Default,
     val customLightColor: Int = Color(0xFF6650a4).toArgb(), // Default Purple40
-    val customDarkColor: Int = Color(0xFFD0BCFF).toArgb()   // Default Purple80
+    val customDarkColor: Int = Color(0xFFD0BCFF).toArgb(),   // Default Purple80
 )

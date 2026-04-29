@@ -105,8 +105,8 @@ class EditorViewModel : ViewModel() {
         val canvasY = centeredY + ((containerSize.height - imageSize.height) / 2)
         
         return Offset(
-            x = canvasX * scale + offset.x,
-            y = canvasY * scale + offset.y,
+            x = (canvasX * scale) + offset.x,
+            y = (canvasY * scale) + offset.y,
         )
     }
 }

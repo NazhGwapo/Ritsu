@@ -34,7 +34,7 @@ fun MiniLeaderboardCard(
     isHighlighted: Boolean = false,
     displayValue: String? = null,
     booleanLabels: List<String> = emptyList(),
-    onClick: () -> Unit = {}
+    onClick: () -> Unit = {},
 ) {
     val backgroundColor = if (isHighlighted) {
         MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
@@ -136,7 +136,7 @@ fun MiniLeaderboardCardPreview() {
                     maxCombo = 500,
                     accuracy = 98.5,
                     playRank = "S",
-                    playTimestamp = System.currentTimeMillis() - 1000 * 60 * 60 * 24 * 30L
+                    playTimestamp = System.currentTimeMillis() - (1000 * 60 * 60 * 24 * 30L)
                 ),
                 isHighlighted = false
             )

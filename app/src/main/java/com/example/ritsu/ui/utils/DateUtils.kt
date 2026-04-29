@@ -5,8 +5,8 @@ import java.util.*
 
 object DateUtils {
     fun isSameDay(cal1: Calendar, cal2: Calendar): Boolean {
-        return cal1[Calendar.YEAR] == cal2[Calendar.YEAR] &&
-                cal1[Calendar.DAY_OF_YEAR] == cal2[Calendar.DAY_OF_YEAR]
+        return (cal1[Calendar.YEAR] == cal2[Calendar.YEAR] &&
+                cal1[Calendar.DAY_OF_YEAR] == cal2[Calendar.DAY_OF_YEAR])
     }
 
     fun getDateOptions(selectedRange: String): List<String> {
@@ -53,7 +53,7 @@ object DateUtils {
         range: String,
         option: String,
         customStart: Long,
-        customEnd: Long
+        customEnd: Long,
     ): Boolean {
         val playDate = Date(timestamp)
         val playCalendar = Calendar.getInstance().apply { time = playDate }
@@ -65,7 +65,7 @@ object DateUtils {
                 when (option) {
                     "Today" -> isSameDay(playCalendar, Calendar.getInstance())
                     "Yesterday" -> isSameDay(playCalendar, Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -1) })
-                    else -> try { sdfDay.format(playDate) == option } catch(e: Exception) { false }
+                    else -> try { sdfDay.format(playDate) == option } catch(_: Exception) { false }
                 }
             }
             "Week" -> {
@@ -83,7 +83,7 @@ object DateUtils {
             "Month" -> sdfMonth.format(playDate) == option
             "Year" -> playCalendar[Calendar.YEAR].toString() == option
             "All Time" -> true
-            "Custom" -> timestamp >= customStart && timestamp <= customEnd
+            "Custom" -> timestamp in customStart..customEnd
             else -> false
         }
     }

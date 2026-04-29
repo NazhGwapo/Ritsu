@@ -132,7 +132,7 @@ class NotificationService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     private fun startProjection(resultCode: Int, data: Intent) {
-        val mpManager = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+        val mpManager = getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
         mediaProjection = mpManager.getMediaProjection(resultCode, data)
         
         mediaProjection?.registerCallback(object : MediaProjection.Callback() {
@@ -154,12 +154,25 @@ class NotificationService : Service() {
             return
         }
 
-        val windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
-        val metrics = DisplayMetrics()
-        windowManager.defaultDisplay.getRealMetrics(metrics)
-        val width = metrics.widthPixels
-        val height = metrics.heightPixels
-        val density = metrics.densityDpi
+        val windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
+        val width: Int
+        val height: Int
+        val density: Int
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            val windowMetrics = windowManager.currentWindowMetrics
+            val bounds = windowMetrics.bounds
+            width = bounds.width()
+            height = bounds.height()
+            density = resources.displayMetrics.densityDpi
+        } else {
+            val metrics = DisplayMetrics()
+            @Suppress("DEPRECATION")
+            windowManager.defaultDisplay.getRealMetrics(metrics)
+            width = metrics.widthPixels
+            height = metrics.heightPixels
+            density = metrics.densityDpi
+        }
 
         imageReader = ImageReader.newInstance(width, height, PixelFormat.RGBA_8888, 2)
         virtualDisplay = mediaProjection?.createVirtualDisplay(
@@ -171,7 +184,7 @@ class NotificationService : Service() {
         )
 
         imageReader?.setOnImageAvailableListener({ reader ->
-            val image = try { reader.acquireLatestImage() } catch (e: Exception) { null }
+            val image = try { reader.acquireLatestImage() } catch (_: Exception) { null }
             if (image != null) {
                 val planes = image.planes
                 val buffer = planes[0].buffer
@@ -182,7 +195,7 @@ class NotificationService : Service() {
                 val bitmap = Bitmap.createBitmap(
                     actualWidth,
                     height,
-                    Bitmap.Config.ARGB_8888
+                    Bitmap.Config.ARGB_8888,
                 )
                 bitmap.copyPixelsFromBuffer(buffer)
                 
@@ -209,7 +222,7 @@ class NotificationService : Service() {
                 val extractedData = ocrManager.processImage(bitmap, configData)
 
                 // Same logic as in NavigationComponent
-                var accuracyVal = extractedData["accuracy"]?.toDoubleOrNull()
+                var accuracyVal = if (configData.useAccuracyOcr) extractedData["accuracy"]?.toDoubleOrNull() else null
                 if (accuracyVal == null) {
                     accuracyVal = AccuracyCalculator.calculate(extractedData, configData) ?: 0.0
                 }

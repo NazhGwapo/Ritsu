@@ -29,7 +29,7 @@ object ConfigManager {
                     val config = GameConfig(
                         gameName = decoded.gameName,
                         configData = jsonString,
-                        configVersion = decoded.configVersion
+                        configVersion = decoded.configVersion,
                     )
 
                     val database = RitsuDatabase.getDatabase(context)

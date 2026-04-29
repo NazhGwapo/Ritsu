@@ -4,7 +4,7 @@ import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.ImageDecoder
-import android.media.ExifInterface
+import androidx.exifinterface.media.ExifInterface
 import android.os.Build
 import android.provider.MediaStore
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -48,7 +48,6 @@ import com.example.ritsu.data.RitsuDatabase
 import com.example.ritsu.data.ScoreDetail
 import com.example.ritsu.data.ScoreRepository
 import com.example.ritsu.data.AccuracyCalculator
-import com.example.ritsu.service.NotificationService
 import com.example.ritsu.service.ServiceControlActivity
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
@@ -68,11 +67,11 @@ fun NavigationComponent(
     val json = remember { Json { ignoreUnknownKeys = true } }
 
     var showMenu by remember { mutableStateOf(value = false) }
-    var showConfigDialog by remember { mutableStateOf(false) }
+    var showConfigDialog by remember { mutableStateOf(value = false) }
     var selectedConfigForGallery by remember { mutableStateOf<GameConfig?>(null) }
 
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
+        contract = ActivityResultContracts.RequestPermission(),
     ) { isGranted ->
         if (isGranted) {
             val intent = Intent(context, ServiceControlActivity::class.java).apply {
@@ -85,15 +84,18 @@ fun NavigationComponent(
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickMultipleVisualMedia()
     ) { uris ->
-        if (uris.isNotEmpty() && selectedConfigForGallery != null) {
+        if ((uris.isNotEmpty()) && selectedConfigForGallery != null) {
             val config = selectedConfigForGallery!!
             uris.forEach { uri ->
                 scope.launch {
                     val bitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                        ImageDecoder.decodeBitmap(ImageDecoder.createSource(context.contentResolver, uri))
+                        ImageDecoder.decodeBitmap(ImageDecoder.createSource(context.contentResolver, uri)) { decoder, _, _ ->
+                            decoder.isMutableRequired = true
+                        }
                     } else {
-                        MediaStore.Images.Media.getBitmap(context.contentResolver, uri)
-                    }.copy(android.graphics.Bitmap.Config.ARGB_8888, true)
+                        @Suppress("DEPRECATION")
+                        MediaStore.Images.Media.getBitmap(context.contentResolver, uri).copy(android.graphics.Bitmap.Config.ARGB_8888, true)
+                    }
 
                     val configData = json.decodeFromString<GameConfigData>(config.configData)
                     val extractedData = ocrManager.processImage(bitmap, configData)
@@ -115,7 +117,7 @@ fun NavigationComponent(
                     }
 
                     // Get accuracy from OCR or default to calculation if empty
-                    var accuracyVal = extractedData["accuracy"]?.toDoubleOrNull()
+                    var accuracyVal = if (configData.useAccuracyOcr) extractedData["accuracy"]?.toDoubleOrNull() else null
                     if (accuracyVal == null) {
                         accuracyVal = AccuracyCalculator.calculate(extractedData, configData) ?: 0.0
                     }
@@ -153,12 +155,11 @@ fun NavigationComponent(
     if (showConfigDialog) {
         GalleryConfigDialog(
             onDismiss = { showConfigDialog = false },
-            onConfigSelected = { config ->
-                selectedConfigForGallery = config
-                showConfigDialog = false
-                galleryLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-            }
-        )
+        ) { config ->
+            selectedConfigForGallery = config
+            showConfigDialog = false
+            galleryLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+        }
     }
 
     NavigationBar {
@@ -196,9 +197,10 @@ fun NavigationComponent(
                 )
             }
             DropdownMenu(
-                expanded = showMenu && USE_NOTIFICATION_CAPTURE,
+                expanded = showMenu,
                 onDismissRequest = { showMenu = false }
             ) {
+                @Suppress("ConstantConditionIf")
                 if (USE_NOTIFICATION_CAPTURE) {
                     DropdownMenuItem(
                         text = { Text("Activate Notification Service") },

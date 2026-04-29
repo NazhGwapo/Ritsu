@@ -1,6 +1,5 @@
 package com.example.ritsu.ui.components
 
-import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.view.View
@@ -49,9 +48,7 @@ fun DataExportDialog(
     onDismiss: () -> Unit
 ) {
     var selectedOption by remember { mutableStateOf("Summary") }
-    var selectedAspectRatio by remember { mutableStateOf("4:3") }
     var captureMode by remember { mutableStateOf<String?>(null) } // "Save" or "Share"
-    val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
     AlertDialog(
@@ -80,19 +77,6 @@ fun DataExportDialog(
                                     label = { Text(option) }
                                 )
                             }
-                        }
-                    }
-                }
-
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Aspect Ratio", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf("4:3", "Square").forEach { ratio ->
-                            FilterChip(
-                                selected = selectedAspectRatio == ratio,
-                                onClick = { selectedAspectRatio = ratio },
-                                label = { Text(ratio) }
-                            )
                         }
                     }
                 }
@@ -150,7 +134,6 @@ fun DataExportDialog(
             topScores = topScores,
             activityData = activityData,
             option = selectedOption,
-            aspectRatio = selectedAspectRatio,
             onCaptured = { bitmap ->
                 val fileName = "Ritsu_Data_${selectedOption.replace(" ", "_")}"
                 if (captureMode == "Save") {
@@ -173,7 +156,6 @@ fun HiddenCaptureView(
     topScores: List<TopScoreItem>,
     activityData: List<ActivityDataPoint>,
     option: String,
-    aspectRatio: String,
     onCaptured: (Bitmap) -> Unit
 ) {
     val context = LocalContext.current
@@ -189,13 +171,13 @@ fun HiddenCaptureView(
     // Use a fixed density to ensure consistent scaling across devices.
     // 1080px / 1.5 density = 720dp (standard tablet/large screen width)
     val customDensity = remember {
-        Density(density = 1.5f, fontScale = 1.0f)
+        Density(density = 1.5f, fontScale = 0.8f)
     }
 
     AndroidView(
         factory = { ctx ->
             ComposeView(ctx).apply {
-                layoutParams = ViewGroup.LayoutParams(1080, if (aspectRatio == "Square") 1080 else 810)
+                layoutParams = ViewGroup.LayoutParams(1080, 1080)
                 visibility = View.INVISIBLE
                 setContent {
                     CompositionLocalProvider(
@@ -214,34 +196,30 @@ fun HiddenCaptureView(
                                         topGames = topGames,
                                         topCharts = topCharts,
                                         topScores = topScores,
-                                        activityData = activityData,
-                                        aspectRatio = aspectRatio
+                                        activityData = activityData
                                     )
                                     "Top Games" -> IndividualExportCard(
                                         title = "Top Games",
-                                        dateRange = dateRange,
-                                        aspectRatio = aspectRatio
+                                        dateRange = dateRange
                                     ) {
                                         topGames.take(10).forEach { 
-                                            GameListItem(it, onClick = {}) 
+                                            GameListItem(it, isCompact = true, onClick = {}) 
                                         }
                                     }
                                     "Top Charts" -> IndividualExportCard(
                                         title = "Top Charts",
-                                        dateRange = dateRange,
-                                        aspectRatio = aspectRatio
+                                        dateRange = dateRange
                                     ) {
                                         topCharts.take(10).forEach { 
-                                            ScoreListItem(it, selectedSort = "Plays", onClick = {}) 
+                                            ScoreListItem(it, selectedSort = "Plays", isCompact = true, onClick = {}) 
                                         }
                                     }
                                     "Top Scores" -> IndividualExportCard(
                                         title = "Top Scores",
-                                        dateRange = dateRange,
-                                        aspectRatio = aspectRatio
+                                        dateRange = dateRange
                                     ) {
                                         topScores.take(10).forEach { 
-                                            ScoreListItem(it, selectedSort = "Accuracy", onClick = {}) 
+                                            ScoreListItem(it, selectedSort = "Accuracy", isCompact = true, onClick = {}) 
                                         }
                                     }
                                 }
@@ -268,18 +246,17 @@ fun HiddenCaptureView(
 fun IndividualExportCard(
     title: String,
     dateRange: String,
-    aspectRatio: String,
     content: @Composable ColumnScope.() -> Unit
 ) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(if (aspectRatio == "Square") 24.dp else 16.dp),
+            .padding(16.dp),
         contentAlignment = Alignment.Center
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(title, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
             Text(dateRange, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
@@ -291,8 +268,8 @@ fun IndividualExportCard(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
                     content = content
                 )
             }

@@ -12,7 +12,6 @@ import com.example.ritsu.data.FullScoreRecord
 import com.example.ritsu.data.RankingUtils
 import com.example.ritsu.data.RitsuDatabase
 import com.example.ritsu.ui.cards.ScoreListItem
-import com.example.ritsu.ui.cards.TopScoreItem
 import com.example.ritsu.ui.components.ScoreDetailsDialog
 import com.example.ritsu.ui.navigation.Screen
 import com.example.ritsu.ui.screens.debug.ManualEntryDialog
@@ -24,7 +23,7 @@ import java.util.*
 fun TopChartsScreen(
     range: String,
     option: String,
-    navController: NavController
+    navController: NavController,
 ) {
     val context = LocalContext.current
     val database = remember { RitsuDatabase.getDatabase(context) }
@@ -34,7 +33,7 @@ fun TopChartsScreen(
     val sortMode = "Plays"
 
     val filteredScores = remember(scores, range, option) {
-        val currentScores = scores ?: return@remember emptyList<FullScoreRecord>()
+        val currentScores = scores
         val sdfDay = SimpleDateFormat("MMM d, yyyy", Locale.getDefault())
         val sdfMonth = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
         
@@ -62,7 +61,7 @@ fun TopChartsScreen(
                             if (start != null && end != null) {
                                 playDate.after(start) && playDate.before(Date(end.time + 86400000))
                             } else false
-                        } catch (e: Exception) { false }
+                        } catch (_: Exception) { false }
                     } else if (option == "This Week") {
                         val startOfWeek = Calendar.getInstance().apply { 
                             set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
@@ -82,42 +81,22 @@ fun TopChartsScreen(
     }
 
     val topCharts = remember(filteredScores, configs, sortMode) {
-        filteredScores.groupBy { "${it.genericScore.configId}|${it.genericScore.songTitle}|${it.genericScore.difficultyName}|${it.genericScore.difficultyVal}" }
+        filteredScores
+            .groupBy { "${it.genericScore.configId}|${it.genericScore.songTitle}|${it.genericScore.difficultyName}|${it.genericScore.difficultyVal}" }
             .map { (key, groupScores) ->
                 val configId = key.split("|").first().toLong()
                 val config = configs.find { it.id == configId }
                 
-                val bestRecord = if (sortMode == "Plays") {
-                    groupScores.maxByOrNull { it.genericScore.playTimestamp }!!
-                } else {
-                    groupScores.maxByOrNull { record ->
-                        RankingUtils.calculateRankingValue(record, config, sortMode)
-                    }!!
-                }
+                val bestRecord = groupScores.maxByOrNull { it.genericScore.playTimestamp }!!
 
                 RankingUtils.mapToTopScoreItem(
                     record = bestRecord,
                     config = config,
                     playCount = groupScores.size,
-                    showRank = (sortMode != "Plays")
+                    showRank = false,
                 )
             }
-            .sortedByDescending { item ->
-                if (sortMode == "Plays") {
-                    item.playCount.toDouble()
-                } else {
-                    val config = configs.find { it.gameName == item.gameName && it.displayIconUri == item.displayIconUri }
-                    val originalRecord = filteredScores.find { 
-                        it.genericScore.songTitle == item.songTitle &&
-                        it.genericScore.difficultyName == item.difficultyName &&
-                        it.genericScore.difficultyVal == item.difficultyVal &&
-                        it.genericScore.id == item.scoreId
-                    }
-                    if (originalRecord != null) {
-                        RankingUtils.calculateRankingValue(originalRecord, config, sortMode)
-                    } else 0.0
-                }
-            }
+            .sortedByDescending { it.playCount.toDouble() }
             .mapIndexed { index, item -> item.copy(rank = index + 1) }
     }
 
@@ -134,32 +113,28 @@ fun TopChartsScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             items(topCharts) { score ->
-                ScoreListItem(score = score, selectedSort = sortMode, onClick = { 
-                    if (sortMode == "Plays") {
-                        val config = configs.find { it.gameName == score.gameName && it.displayIconUri == score.displayIconUri }
-                        val configId = config?.id ?: 0L
-                        val encodedTitle = android.net.Uri.encode(score.songTitle)
-                        val encodedDiffName = android.net.Uri.encode(score.difficultyName)
-                        val encodedDiffVal = android.net.Uri.encode(score.difficultyVal)
-                        navController.navigate(Screen.ChartDetails.name + "/$configId/$encodedTitle/$encodedDiffName/$encodedDiffVal")
-                    } else {
-                        selectedScoreForDetails = filteredScores.find { it.genericScore.id == score.scoreId }
-                    }
-                })
+                ScoreListItem(score = score, selectedSort = sortMode) { 
+                    val config = configs.find { (it.gameName == score.gameName && it.displayIconUri == score.displayIconUri) }
+                    val configId = config?.id ?: 0L
+                    val encodedTitle = android.net.Uri.encode(score.songTitle)
+                    val encodedDiffName = android.net.Uri.encode(score.difficultyName)
+                    val encodedDiffVal = android.net.Uri.encode(score.difficultyVal)
+                    navController.navigate(Screen.ChartDetails.name + "/$configId/$encodedTitle/$encodedDiffName/$encodedDiffVal")
+                }
             }
         }
     }
 
-    if (selectedScoreForDetails != null) {
-        val config = configs.find { it.id == selectedScoreForDetails!!.genericScore.configId }
-        if (config != null) {
+    selectedScoreForDetails?.let { details ->
+        val config = configs.find { it.id == details.genericScore.configId }
+        config?.let {
             ScoreDetailsDialog(
-                scoreRecord = selectedScoreForDetails!!,
-                gameConfig = config,
+                scoreRecord = details,
+                gameConfig = it,
                 scoreDao = database.scoreDao(),
                 onDismiss = { selectedScoreForDetails = null },
                 onChartDetails = {
-                    val s = selectedScoreForDetails!!.genericScore
+                    val s = details.genericScore
                     val encodedTitle = android.net.Uri.encode(s.songTitle)
                     val encodedDiffName = android.net.Uri.encode(s.difficultyName)
                     val encodedDiffVal = android.net.Uri.encode(s.difficultyVal)
@@ -167,12 +142,12 @@ fun TopChartsScreen(
                     navController.navigate(Screen.ChartDetails.name + "/${s.configId}/$encodedTitle/$encodedDiffName/$encodedDiffVal")
                 },
                 onGameDetails = {
-                    val s = selectedScoreForDetails!!.genericScore
+                    val s = details.genericScore
                     selectedScoreForDetails = null
                     navController.navigate(Screen.GameDetails.name + "/${s.configId}")
                 },
                 onEdit = {
-                    scoreToEdit = selectedScoreForDetails
+                    scoreToEdit = details
                     selectedScoreForDetails = null
                 }
             )
@@ -182,7 +157,6 @@ fun TopChartsScreen(
     if (scoreToEdit != null) {
         ManualEntryDialog(
             initialRecord = scoreToEdit,
-            onDismiss = { scoreToEdit = null }
-        )
+        ) { scoreToEdit = null }
     }
 }

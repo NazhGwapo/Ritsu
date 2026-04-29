@@ -38,7 +38,8 @@ data class GameConfigData(
     val difficultyNameRect: OcrRect? = null,
     val difficultyValRect: OcrRect? = null,
     val rankRect: OcrRect? = null,
-    val useRankOcr: Boolean = true
+    val useRankOcr: Boolean = true,
+    val useAccuracyOcr: Boolean = false
 ) {
     val allFieldsWithCategory: List<Pair<ConfigField, String>>
         get() = judgments.map { it to "Judgment" } +
@@ -57,16 +58,6 @@ data class GameConfigData(
         }
     }
 
-    fun updateFieldByKey(key: String, updatedField: ConfigField): GameConfigData {
-        val category = when {
-            key.startsWith("judgment_") -> "Judgment"
-            key.startsWith("metric_") -> "Metric"
-            key.startsWith("misc_") -> "Misc"
-            else -> return this
-        }
-        val index = key.substringAfter("_").toIntOrNull() ?: return this
-        return updateField(category, index, updatedField)
-    }
 
     /**
      * Adds a new field to a category.
@@ -143,6 +134,7 @@ data class GameConfigData(
             key == "difficultyValRect" -> copy(difficultyValRect = rect)
             key == "rankRect" -> copy(rankRect = rect)
             key == "useRankOcr" -> copy(useRankOcr = rect != null) // Simplistic mapping for toggle
+            key == "useAccuracyOcr" -> copy(useAccuracyOcr = rect != null)
             key.startsWith("judgment_") -> {
                 val index = key.substringAfter("judgment_").toIntOrNull()
                 if (index != null && index in judgments.indices) {

@@ -45,9 +45,9 @@ fun ScoreCard(
     booleanLabels: List<String> = emptyList(),
     onClick: () -> Unit = {},
     onEdit: () -> Unit = {},
-    onDelete: () -> Unit = {}
+    onDelete: () -> Unit = {},
 ) {
-    var expanded by remember { mutableStateOf(false) }
+    var expanded by remember { mutableStateOf(value = false) }
 
     Card(
         onClick = onClick,
@@ -170,7 +170,7 @@ fun ScoreCard(
                     overflow = TextOverflow.Ellipsis
                 )
                 val difficultyText = buildString {
-                    if (score.difficultyName.isNotBlank() && score.difficultyName != "Unknown") {
+                    if ((score.difficultyName.isNotBlank()) && score.difficultyName != "Unknown") {
                         append("[${score.difficultyName}] ")
                     }
                     append("${score.difficultyVal} - ${"%,d".format(score.totalScore)} - ${"%.2f".format(score.accuracy)}% - ${score.maxCombo}x")

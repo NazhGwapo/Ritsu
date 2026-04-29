@@ -12,7 +12,6 @@ import com.example.ritsu.data.FullScoreRecord
 import com.example.ritsu.data.RankingUtils
 import com.example.ritsu.data.RitsuDatabase
 import com.example.ritsu.ui.cards.ScoreListItem
-import com.example.ritsu.ui.cards.TopScoreItem
 import com.example.ritsu.ui.components.ScoreDetailsDialog
 import com.example.ritsu.ui.navigation.Screen
 import com.example.ritsu.ui.screens.debug.ManualEntryDialog
@@ -26,7 +25,7 @@ fun TopScoresScreen(
     option: String,
     sortMode: String,
     gameFilter: String,
-    navController: NavController
+    navController: NavController,
 ) {
     val context = LocalContext.current
     val database = remember { RitsuDatabase.getDatabase(context) }
@@ -34,7 +33,7 @@ fun TopScoresScreen(
     val configs by database.scoreDao().getAllConfigs().collectAsState(initial = emptyList())
 
     val filteredScores = remember(scores, range, option) {
-        val currentScores = scores ?: return@remember emptyList<FullScoreRecord>()
+        val currentScores = scores
         val sdfDay = SimpleDateFormat("MMM d, yyyy", Locale.getDefault())
         val sdfMonth = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
         
@@ -62,7 +61,7 @@ fun TopScoresScreen(
                             if (start != null && end != null) {
                                 playDate.after(start) && playDate.before(Date(end.time + 86400000))
                             } else false
-                        } catch (e: Exception) { false }
+                        } catch (_: Exception) { false }
                     } else if (option == "This Week") {
                         val startOfWeek = Calendar.getInstance().apply { 
                             set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
@@ -82,7 +81,7 @@ fun TopScoresScreen(
     }
 
     val topScores = remember(filteredScores, configs, sortMode, gameFilter) {
-        filteredScores
+        filteredScores.asSequence()
             .filter { record ->
                 if (gameFilter == "All") true
                 else {
@@ -101,9 +100,10 @@ fun TopScoresScreen(
                 RankingUtils.mapToTopScoreItem(
                     record = record,
                     config = config,
-                    rank = index + 1
+                    rank = index + 1,
                 )
             }
+            .toList()
     }
 
     var selectedScoreForDetails by remember { mutableStateOf<FullScoreRecord?>(null) }
@@ -119,23 +119,23 @@ fun TopScoresScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             items(topScores) { score ->
-                ScoreListItem(score = score, selectedSort = sortMode, onClick = { 
+                ScoreListItem(score = score, selectedSort = sortMode) { 
                     selectedScoreForDetails = filteredScores.find { it.genericScore.id == score.scoreId }
-                })
+                }
             }
         }
     }
 
-    if (selectedScoreForDetails != null) {
-        val config = configs.find { it.id == selectedScoreForDetails!!.genericScore.configId }
-        if (config != null) {
+    selectedScoreForDetails?.let { details ->
+        val config = configs.find { it.id == details.genericScore.configId }
+        config?.let {
             ScoreDetailsDialog(
-                scoreRecord = selectedScoreForDetails!!,
-                gameConfig = config,
+                scoreRecord = details,
+                gameConfig = it,
                 scoreDao = database.scoreDao(),
                 onDismiss = { selectedScoreForDetails = null },
                 onChartDetails = {
-                    val s = selectedScoreForDetails!!.genericScore
+                    val s = details.genericScore
                     val encodedTitle = android.net.Uri.encode(s.songTitle)
                     val encodedDiffName = android.net.Uri.encode(s.difficultyName)
                     val encodedDiffVal = android.net.Uri.encode(s.difficultyVal)
@@ -143,12 +143,12 @@ fun TopScoresScreen(
                     navController.navigate(Screen.ChartDetails.name + "/${s.configId}/$encodedTitle/$encodedDiffName/$encodedDiffVal")
                 },
                 onGameDetails = {
-                    val s = selectedScoreForDetails!!.genericScore
+                    val s = details.genericScore
                     selectedScoreForDetails = null
                     navController.navigate(Screen.GameDetails.name + "/${s.configId}")
                 },
                 onEdit = {
-                    scoreToEdit = selectedScoreForDetails
+                    scoreToEdit = details
                     selectedScoreForDetails = null
                 }
             )
@@ -158,7 +158,6 @@ fun TopScoresScreen(
     if (scoreToEdit != null) {
         ManualEntryDialog(
             initialRecord = scoreToEdit,
-            onDismiss = { scoreToEdit = null }
-        )
+        ) { scoreToEdit = null }
     }
 }

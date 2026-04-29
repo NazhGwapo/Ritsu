@@ -32,7 +32,7 @@ fun LineGraph(
     label: String = "",
     startLabel: String? = null,
     endLabel: String? = null,
-    valueFormatter: (Float) -> String = { it.toString() }
+    valueFormatter: (Float) -> String = { it.toString() },
 ) {
     if (data.isEmpty()) {
         Box(
@@ -128,7 +128,7 @@ fun LineGraph(
                                 fillPath.lineTo(x, y)
                             }
                             
-                            if (index == data.size - 1) {
+                            if (index == (data.size - 1)) {
                                 fillPath.lineTo(x, height)
                                 fillPath.close()
                             }

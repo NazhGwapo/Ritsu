@@ -31,7 +31,6 @@ import com.example.ritsu.ui.components.NewConfigDialog
 import com.example.ritsu.ui.utils.saveDrawableToFile
 import com.example.ritsu.ui.utils.saveUriToFile
 import kotlinx.coroutines.launch
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 @Composable
@@ -47,7 +46,7 @@ fun ManageConfigsScreen(onEditConfig: () -> Unit) {
         configs.find { it.id == selectedConfigId }
     }
     var showAppPicker by remember { mutableStateOf(value = false) }
-    var showNewConfigDialog by remember { mutableStateOf(false) }
+    var showNewConfigDialog by remember { mutableStateOf(value = false) }
 
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
@@ -66,7 +65,7 @@ fun ManageConfigsScreen(onEditConfig: () -> Unit) {
     Box(modifier = Modifier.fillMaxSize()) {
         Surface(
             modifier = Modifier.fillMaxSize(),
-            color = MaterialTheme.colorScheme.background
+            color = MaterialTheme.colorScheme.background,
         ) {
             LazyColumn(
                 modifier = Modifier
@@ -158,13 +157,12 @@ fun ManageConfigsScreen(onEditConfig: () -> Unit) {
                 }
             },
             onPickFromGallery = { galleryLauncher.launch("image/*") },
-            onPickFromApps = { showAppPicker = true },
-            onUpdateConfig = { updated ->
-                scope.launch {
-                    database.scoreDao().updateConfig(updated)
-                }
+            onPickFromApps = { showAppPicker = true }
+        ) { updated ->
+            scope.launch {
+                database.scoreDao().updateConfig(updated)
             }
-        )
+        }
     }
 
     if (showAppPicker) {

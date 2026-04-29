@@ -37,7 +37,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun DebugScreen() {
     var showOcrDialog by remember { mutableStateOf(value = false) }
-    var showCardEditor by remember { mutableStateOf(false) }
+    var showCardEditor by remember { mutableStateOf(value = false) }
     var showManualEntryDialog by remember { mutableStateOf(false) }
     var showDatabaseViewer by remember { mutableStateOf(false) }
     var showDummyEntriesDialog by remember { mutableStateOf(false) }
@@ -57,7 +57,7 @@ fun DebugScreen() {
         item {
             ListItem(
                 headlineContent = { Text("ScoreCard Editor") },
-                modifier = Modifier.clickable { showCardEditor = true }
+                modifier = Modifier.clickable { showCardEditor = true },
             )
         }
         item {
@@ -87,11 +87,11 @@ fun DebugScreen() {
     }
 
     if (showOcrDialog) {
-        OcrTestDialog { showOcrDialog = false }
+        OcrTestDialog(onDismiss = { showOcrDialog = false })
     }
     
     if (showCardEditor) {
-        ScoreCardEditorDialog(onDismiss = { showCardEditor = false })
+        ScoreCardEditorDialog { showCardEditor = false }
     }
 
     if (showManualEntryDialog) {

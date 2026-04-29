@@ -14,7 +14,6 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -25,14 +24,14 @@ import com.example.ritsu.ui.theme.RitsuTheme
 
 data class ActivityDataPoint(
     val label: String,
-    val value: Int
+    val value: Int,
 )
 
 @Composable
 fun ActivityGraphCard(
     dataPoints: List<ActivityDataPoint>,
+    modifier: Modifier = Modifier,
     onCardClick: () -> Unit = {},
-    modifier: Modifier = Modifier
 ) {
     val primaryColor = MaterialTheme.colorScheme.primary
     val gridLineColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f)
@@ -89,7 +88,7 @@ fun ActivityGraphCard(
                         ) {
                             listOf(1.0, 0.75, 0.5, 0.25, 0.0).forEach { ratio ->
                                 Text(
-                                    text = "${(maxValue * ratio).toInt()}",
+                                    text = (maxValue * ratio).toInt().toString(),
                                     color = labelColor,
                                     fontSize = 10.sp,
                                     style = MaterialTheme.typography.labelSmall
@@ -106,9 +105,8 @@ fun ActivityGraphCard(
                             
                             val itemCount = dataPoints.size
                             val spacingRatio = 0.5f 
-                            val totalSlots = itemCount + (itemCount + 1) * spacingRatio
+                            val totalSlots = itemCount + ((itemCount + 1) * spacingRatio)
                             val slotWidth = width / totalSlots
-                            val barWidth = slotWidth
                             val spacing = slotWidth * spacingRatio
                             
                             // Horizontal grid lines
@@ -125,7 +123,7 @@ fun ActivityGraphCard(
 
                             // Bars
                             animatedValues.forEachIndexed { index, animValue ->
-                                val x = spacing + index * (barWidth + spacing)
+                                val x = spacing + index * (slotWidth + spacing)
                                 val barHeight = animValue.value * height
                                 
                                 if (barHeight > 0) {
@@ -136,7 +134,7 @@ fun ActivityGraphCard(
                                             endY = height
                                         ),
                                         topLeft = Offset(x, height - barHeight),
-                                        size = Size(barWidth, barHeight),
+                                        size = Size(slotWidth, barHeight),
                                         cornerRadius = CornerRadius(4.dp.toPx(), 4.dp.toPx())
                                     )
                                 }

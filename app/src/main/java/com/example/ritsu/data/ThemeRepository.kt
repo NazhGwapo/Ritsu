@@ -23,15 +23,15 @@ class ThemeRepository(private val context: Context) {
 
     val themeConfig: Flow<ThemeConfig> = context.dataStore.data.map { preferences ->
         val themeMode = AppThemeMode.valueOf(
-            preferences[PreferencesKeys.THEME_MODE] ?: AppThemeMode.System.name
+            preferences[PreferencesKeys.THEME_MODE] ?: AppThemeMode.System.name,
         )
         val colorPalette = ColorPalette.valueOf(
-            preferences[PreferencesKeys.COLOR_PALETTE] ?: ColorPalette.Default.name
+            preferences[PreferencesKeys.COLOR_PALETTE] ?: ColorPalette.Default.name,
         )
         val customLightColor = preferences[PreferencesKeys.CUSTOM_LIGHT_COLOR] ?: ThemeConfig().customLightColor
         val customDarkColor = preferences[PreferencesKeys.CUSTOM_DARK_COLOR] ?: ThemeConfig().customDarkColor
 
-        ThemeConfig(themeMode, colorPalette, customLightColor, customDarkColor)
+        ThemeConfig(themeMode, colorPalette, customLightColor, customDarkColor,)
     }
 
     suspend fun updateThemeMode(mode: AppThemeMode) {

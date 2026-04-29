@@ -25,7 +25,7 @@ data class GameConfig(
             entity = GameConfig::class,
             parentColumns = ["id"],
             childColumns = ["configId"],
-            onDelete = ForeignKey.CASCADE
+            onDelete = ForeignKey.CASCADE,
         )
     ],
     indices = [Index(value = ["configId"])]
@@ -46,7 +46,7 @@ data class GenericScore(
 ) {
     companion object {
         fun parseDifficulty(diffStr: String): Double {
-            val numericPart = diffStr.filter { it.isDigit() || it == '.' }.toDoubleOrNull() ?: 0.0
+            val numericPart = diffStr.filter { (it.isDigit() || it == '.') }.toDoubleOrNull() ?: 0.0
             var bonus = 0.0
             if (diffStr.contains('+')) bonus += 0.5
             return numericPart + bonus
@@ -61,7 +61,7 @@ data class GenericScore(
             entity = GenericScore::class,
             parentColumns = ["id"],
             childColumns = ["scoreId"],
-            onDelete = ForeignKey.CASCADE
+            onDelete = ForeignKey.CASCADE,
         )
     ],
     indices = [Index(value = ["scoreId"])]

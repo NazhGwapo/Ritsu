@@ -3,7 +3,6 @@ package com.example.ritsu.ui.utils
 import android.content.ContentValues
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.Canvas
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
@@ -20,14 +19,6 @@ import androidx.core.view.drawToBitmap
 import java.io.OutputStream
 
 object CaptureUtils {
-    /**
-     * Captures a Composable to a Bitmap.
-     * Note: This is a simplified version. Real-world implementation might need a more robust approach
-     * like using a hidden ComposeView in the Activity or a dedicated CaptureActivity.
-     */
-    fun captureComposable(view: View): Bitmap {
-        return view.drawToBitmap()
-    }
 
     fun saveBitmapToGallery(context: Context, bitmap: Bitmap, fileName: String): Uri? {
         val imageCollection = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {

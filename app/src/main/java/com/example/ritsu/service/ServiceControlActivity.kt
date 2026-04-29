@@ -22,20 +22,23 @@ class ServiceControlActivity : ComponentActivity() {
         const val COMMAND_CHANGE_CONFIG = "change_config"
         const val COMMAND_CAPTURE = "capture"
         
-        const val ACTION_STATE_UPDATED = "com.example.ritsu.STATE_UPDATED"
         const val EXTRA_CONFIG_ID = "config_id"
     }
 
     private val projectionLauncher = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
+        ActivityResultContracts.StartActivityForResult(),
     ) { result ->
-        if (result.resultCode == Activity.RESULT_OK && result.data != null) {
+        if ((result.resultCode == RESULT_OK) && result.data != null) {
             val intent = Intent(this, NotificationService::class.java).apply {
                 action = NotificationService.ACTION_START_PROJECTION
                 putExtra(NotificationService.EXTRA_PROJECTION_RESULT_CODE, result.resultCode)
                 putExtra(NotificationService.EXTRA_PROJECTION_DATA, result.data)
             }
-            startForegroundService(intent)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(intent)
+            } else {
+                startService(intent)
+            }
         }
         finish()
     }
@@ -43,8 +46,7 @@ class ServiceControlActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        val command = intent.getStringExtra(EXTRA_COMMAND)
-        when (command) {
+        when (val command = intent.getStringExtra(EXTRA_COMMAND)) {
             COMMAND_START_SERVICE -> requestProjectionAndStart()
             COMMAND_CHANGE_CONFIG -> showConfigSelector()
             COMMAND_CAPTURE -> {

@@ -29,7 +29,7 @@ fun ConfigDetailDialog(
     onDelete: () -> Unit,
     onPickFromGallery: () -> Unit,
     onPickFromApps: () -> Unit,
-    onUpdateConfig: (GameConfig) -> Unit = {}
+    onUpdateConfig: (GameConfig) -> Unit = {},
 ) {
     val json = remember { Json { ignoreUnknownKeys = true; prettyPrint = true } }
     val configData = remember(config) {
@@ -143,6 +143,27 @@ fun ConfigDetailDialog(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text("Use Rank OCR", style = MaterialTheme.typography.bodyMedium)
+                    }
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                val newData = configData.copy(useAccuracyOcr = !configData.useAccuracyOcr)
+                                onUpdateConfig(config.copy(configData = json.encodeToString(newData)))
+                            }
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = configData.useAccuracyOcr,
+                            onCheckedChange = {
+                                val newData = configData.copy(useAccuracyOcr = it)
+                                onUpdateConfig(config.copy(configData = json.encodeToString(newData)))
+                            }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Use Accuracy OCR", style = MaterialTheme.typography.bodyMedium)
                     }
 
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))

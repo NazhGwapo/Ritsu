@@ -1,6 +1,5 @@
 package com.example.ritsu.ui.cards
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -19,12 +18,11 @@ import com.example.ritsu.ui.theme.RitsuTheme
 @Composable
 fun TopChartsCard(
     scores: List<TopScoreItem>,
+    modifier: Modifier = Modifier,
     selectedSort: String = "Plays",
-    onSortChange: (String) -> Unit = {},
     onCardClick: () -> Unit = {},
     onChartClick: (TopScoreItem) -> Unit = {},
     onMoreClick: () -> Unit = {},
-    modifier: Modifier = Modifier
 ) {
     ElevatedCard(
         onClick = onCardClick,
@@ -57,7 +55,7 @@ fun TopChartsCard(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 scores.take(4).forEach { score ->
-                    ScoreListItem(score, selectedSort = selectedSort, onClick = { onChartClick(score) })
+                    ScoreListItem(score, selectedSort = selectedSort) { onChartClick(score) }
                 }
             }
 

@@ -8,7 +8,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.FilterList
-import androidx.compose.material.icons.filled.Games
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.VideogameAsset
 import androidx.compose.material3.*
@@ -50,6 +49,7 @@ data class TopScoreItem(
 @Composable
 fun TopScoresCard(
     scores: List<TopScoreItem>,
+    modifier: Modifier = Modifier,
     selectedSort: String = "Accuracy",
     onSortChange: (String) -> Unit = {},
     availableGames: List<String> = emptyList(),
@@ -58,7 +58,6 @@ fun TopScoresCard(
     onCardClick: () -> Unit = {},
     onScoreClick: (TopScoreItem) -> Unit = {},
     onMoreClick: () -> Unit = {},
-    modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
     var gameExpanded by remember { mutableStateOf(false) }
@@ -166,7 +165,7 @@ fun TopScoresCard(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 scores.take(4).forEach { score ->
-                    ScoreListItem(score, selectedSort = selectedSort, onClick = { onScoreClick(score) })
+                    ScoreListItem(score, selectedSort = selectedSort) { onScoreClick(score) }
                 }
             }
 
@@ -198,19 +197,25 @@ fun TopScoresCard(
 }
 
 @Composable
-fun ScoreListItem(score: TopScoreItem, selectedSort: String = "Accuracy", onClick: () -> Unit) {
+fun ScoreListItem(score: TopScoreItem, selectedSort: String = "Accuracy", isCompact: Boolean = false, onClick: () -> Unit) {
+    val iconSize = if (isCompact) 40.dp else 56.dp
+    val textStyle = if (isCompact) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.bodyLarge
+    val subTextStyle = if (isCompact) MaterialTheme.typography.labelSmall else MaterialTheme.typography.bodySmall
+    val padding = if (isCompact) 2.dp else 4.dp
+    val spacing = if (isCompact) 8.dp else 12.dp
+
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
             .clickable(onClick = onClick)
-            .padding(4.dp)
+            .padding(padding)
     ) {
         if (score.showIcon) {
             Box(
                 modifier = Modifier
-                    .size(56.dp)
+                    .size(iconSize)
                     .clip(RoundedCornerShape(8.dp))
                     .background(MaterialTheme.colorScheme.surfaceVariant)
             ) {
@@ -240,13 +245,13 @@ fun ScoreListItem(score: TopScoreItem, selectedSort: String = "Accuracy", onClic
                 }
             }
 
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(spacing))
         }
 
         Column(modifier = Modifier.weight(1f)) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(if (isCompact) 4.dp else 8.dp)
             ) {
                 if (score.showRank && score.playRank.isNotBlank()) {
                     Surface(
@@ -258,14 +263,15 @@ fun ScoreListItem(score: TopScoreItem, selectedSort: String = "Accuracy", onClic
                             modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Black,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            fontSize = if (isCompact) 8.sp else 10.sp
                         )
                     }
                 }
 
                 Text(
                     text = score.songTitle,
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = textStyle,
                     fontWeight = FontWeight.Medium,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -286,7 +292,7 @@ fun ScoreListItem(score: TopScoreItem, selectedSort: String = "Accuracy", onClic
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            fontSize = 10.sp
+                            fontSize = if (isCompact) 9.sp else 10.sp
                         )
                     }
                 }
@@ -295,7 +301,7 @@ fun ScoreListItem(score: TopScoreItem, selectedSort: String = "Accuracy", onClic
             if (score.booleanLabels.isNotEmpty()) {
                 Row(
                     modifier = Modifier.padding(top = 2.dp),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(if (isCompact) 2.dp else 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     score.booleanLabels.forEach { label ->
@@ -309,7 +315,7 @@ fun ScoreListItem(score: TopScoreItem, selectedSort: String = "Accuracy", onClic
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                fontSize = 10.sp
+                                fontSize = if (isCompact) 8.sp else 10.sp
                             )
                         }
                     }
@@ -325,14 +331,16 @@ fun ScoreListItem(score: TopScoreItem, selectedSort: String = "Accuracy", onClic
             }
             Text(
                 text = "${score.difficultyVal} - $statsText",
-                style = MaterialTheme.typography.bodySmall,
+                style = subTextStyle,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
-            Text(
-                text = score.gameName,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
-            )
+            if (!isCompact) {
+                Text(
+                    text = score.gameName,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                )
+            }
         }
     }
 }

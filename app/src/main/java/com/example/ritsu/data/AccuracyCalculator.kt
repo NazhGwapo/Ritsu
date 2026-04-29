@@ -25,36 +25,11 @@ object AccuracyCalculator {
             foundAny = true
         }
 
-        if (!foundAny || totalNotes == 0) return null
+        if (!(foundAny) || totalNotes == 0) return null
 
         return (weightedHits / totalNotes) * 100.0
     }
 
-    /**
-     * Calculates accuracy from a list of ScoreDetail.
-     */
-    fun calculateFromDetails(details: List<ScoreDetail>, config: GameConfigData): Double? {
-        val judgments = config.judgments
-        if (judgments.isEmpty()) return null
-
-        var totalNotes = 0
-        var weightedHits = 0.0
-        var foundAny = false
-
-        judgments.forEach { field ->
-            val detail = details.find { it.key == field.key } ?: return@forEach
-            val count = detail.value.filter { it.isDigit() }.toIntOrNull() ?: 0
-            val weight = field.weight ?: 0.0
-            
-            totalNotes += count
-            weightedHits += count * weight
-            foundAny = true
-        }
-
-        if (!foundAny || totalNotes == 0) return null
-
-        return (weightedHits / totalNotes) * 100.0
-    }
 
     /**
      * Calculates the total note count from a list of ScoreDetail based on judgments.

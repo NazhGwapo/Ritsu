@@ -1,7 +1,6 @@
 package com.example.ritsu.ui.utils
 
 import com.example.ritsu.data.FullScoreRecord
-import com.example.ritsu.data.GameConfig
 
 enum class QueryOperator {
     EQUALS, GREATER_THAN, LESS_THAN, GREATER_EQUALS, LESS_EQUALS, CONTAINS
@@ -10,7 +9,7 @@ enum class QueryOperator {
 data class ScoreQuery(
     val key: String?,
     val operator: QueryOperator,
-    val value: String
+    val value: String,
 )
 
 object ScoreFilterUtils {
@@ -73,7 +72,7 @@ object ScoreFilterUtils {
                         if (detail != null) {
                             val detailVal = detail.value
                             // Try numeric comparison first if possible
-                            val numVal = detailVal.filter { it.isDigit() || it == '.' }.toDoubleOrNull()
+                            val numVal = detailVal.filter { (it.isDigit() || it == '.') }.toDoubleOrNull()
                             if (numVal != null && q.value.toDoubleOrNull() != null) {
                                 compareDouble(numVal, q.operator, q.value)
                             } else {

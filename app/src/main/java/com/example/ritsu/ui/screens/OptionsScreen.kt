@@ -27,7 +27,7 @@ import com.example.ritsu.data.RitsuDatabase
 fun OptionsScreen(
     onManageConfigsClick: () -> Unit,
     onDebugClick: () -> Unit,
-    onThemeClick: () -> Unit
+    onThemeClick: () -> Unit,
 ) {
     val context = LocalContext.current
     val database = remember { RitsuDatabase.getDatabase(context) }
@@ -35,7 +35,7 @@ fun OptionsScreen(
     val scores by database.scoreDao().getAllScores().collectAsState(initial = emptyList())
     
     var showConfigExportDialog by remember { mutableStateOf(value = false) }
-    var showDataExportDialog by remember { mutableStateOf(false) }
+    var showDataExportDialog by remember { mutableStateOf(value = false) }
     var selectedConfigToExport by remember { mutableStateOf<GameConfig?>(null) }
 
     // --- Configuration Import/Export Launchers ---
@@ -174,7 +174,7 @@ fun OptionsScreen(
                                 selectedConfigToExport = config
                                 configExportLauncher.launch("${config.gameName.replace(" ", "_")}.json")
                                 showConfigExportDialog = false
-                            },
+                            }
                         )
                     }
                 }
