@@ -404,6 +404,7 @@ private fun rectsFromData(data: GameConfigData): List<FieldInfo> {
         add(FieldInfo("titleRect", "Title", data.titleRect))
         add(FieldInfo("scoreRect", "Score", data.scoreRect))
         add(FieldInfo("comboRect", "Combo", data.comboRect))
+        add(FieldInfo("accuracyRect", "Accuracy", data.accuracyRect))
         add(FieldInfo("difficultyNameRect", "Diff Name", data.difficultyNameRect))
         add(FieldInfo("difficultyValRect", "Diff Val", data.difficultyValRect))
         add(FieldInfo("rankRect", "Rank", data.rankRect))

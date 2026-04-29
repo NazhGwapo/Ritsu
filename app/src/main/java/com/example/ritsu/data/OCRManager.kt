@@ -74,7 +74,11 @@ class OCRManager {
         config.titleRect?.let { extractedData["songTitle"] = extractBestText(it, isNumeric = false) }
         config.scoreRect?.let { extractedData["totalScore"] = extractBestText(it, isNumeric = true) }
         config.comboRect?.let { extractedData["maxCombo"] = extractBestText(it, isNumeric = true) }
-        config.accuracyRect?.let { extractedData["accuracy"] = extractBestText(it, isNumeric = true) }
+        config.accuracyRect?.let { 
+            if (config.useAccuracyOcr) {
+                extractedData["accuracy"] = extractBestText(it, isNumeric = true)
+            }
+        }
         config.difficultyNameRect?.let { extractedData["difficultyName"] = extractBestText(it, isNumeric = false) }
         config.difficultyValRect?.let { extractedData["difficultyVal"] = extractBestText(it, isNumeric = false) }
         config.rankRect?.let { 
