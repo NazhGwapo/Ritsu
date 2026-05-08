@@ -40,6 +40,7 @@ fun HeaderComponent(
                         Screen.TopCharts -> "Top Charts"
                         Screen.TopScores -> "Top Scores"
                         Screen.GraphDetail -> "Graph Detail"
+                        Screen.Help -> "Help"
                     }
                 )
                 subtitle?.let {

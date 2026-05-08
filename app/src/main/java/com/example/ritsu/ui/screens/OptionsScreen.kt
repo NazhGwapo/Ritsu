@@ -28,6 +28,8 @@ fun OptionsScreen(
     onManageConfigsClick: () -> Unit,
     onDebugClick: () -> Unit,
     onThemeClick: () -> Unit,
+    onHelpClick: () -> Unit,
+    startHelp: Boolean = false
 ) {
     val context = LocalContext.current
     val database = remember { RitsuDatabase.getDatabase(context) }
@@ -37,6 +39,12 @@ fun OptionsScreen(
     var showConfigExportDialog by remember { mutableStateOf(value = false) }
     var showDataExportDialog by remember { mutableStateOf(value = false) }
     var selectedConfigToExport by remember { mutableStateOf<GameConfig?>(null) }
+
+    LaunchedEffect(startHelp) {
+        if (startHelp) {
+            onHelpClick()
+        }
+    }
 
     // --- Configuration Import/Export Launchers ---
     val configImportLauncher = rememberLauncherForActivityResult(
@@ -146,7 +154,7 @@ fun OptionsScreen(
             ListItem(
                 headlineContent = { Text("Help") },
                 leadingContent = { Icon(Icons.AutoMirrored.Filled.Help, contentDescription = null) },
-                modifier = Modifier.clickable { /* No functionality */ }
+                modifier = Modifier.clickable { onHelpClick() }
             )
         }
         item {
