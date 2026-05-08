@@ -39,6 +39,7 @@ import com.example.ritsu.data.GameConfigData
 import com.example.ritsu.data.RitsuDatabase
 import com.example.ritsu.ui.cards.ScoreCard
 import com.example.ritsu.ui.components.ScoreDetailsDialog
+import com.example.ritsu.ui.components.ScoreEditDialog
 import com.example.ritsu.ui.screens.debug.ManualEntryDialog
 import com.example.ritsu.ui.utils.ScoreFilterUtils
 import kotlinx.coroutines.launch
@@ -328,10 +329,28 @@ fun ScoreScreen(
     }
 
     if (scoreToEdit != null) {
-        ManualEntryDialog(
-            initialRecord = scoreToEdit,
-            onDismiss = { scoreToEdit = null }
-        )
+        val config = configMap[scoreToEdit!!.genericScore.configId]
+        if (config != null) {
+            ScoreEditDialog(
+                scoreRecord = scoreToEdit!!,
+                gameConfig = config,
+                onDismiss = { scoreToEdit = null },
+                onSave = { updatedScore, updatedDetails ->
+                    scope.launch {
+                        database.scoreDao().updateScore(updatedScore)
+                        database.scoreDao().deleteDetailsForScore(updatedScore.id)
+                        database.scoreDao().insertDetails(updatedDetails)
+                        scoreToEdit = null
+                    }
+                }
+            )
+        } else {
+            // Fallback for debug/unknown configs
+            ManualEntryDialog(
+                initialRecord = scoreToEdit,
+                onDismiss = { scoreToEdit = null }
+            )
+        }
     }
 }
 

@@ -24,7 +24,7 @@ enum class EditorMode {
 }
 
 @Composable
-fun BoxEditorScreen() {
+fun BoxEditorScreen(onHelpClick: () -> Unit = {}) {
     val context = LocalContext.current
     val database = remember { RitsuDatabase.getDatabase(context) }
     val scope = rememberCoroutineScope()
@@ -80,7 +80,8 @@ fun BoxEditorScreen() {
                             }
                         }
                     }
-                }
+                },
+                onHelp = onHelpClick
             )
         },
         bottomBar = {

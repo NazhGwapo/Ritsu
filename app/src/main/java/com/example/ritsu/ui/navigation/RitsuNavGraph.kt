@@ -64,8 +64,20 @@ fun RitsuNavGraph(
                 startHelp = startHelp
             )
         }
-        composable(Screen.Help.name) {
-            HelpScreen(onBack = { navController.popBackStack() })
+        composable(
+            route = Screen.Help.name + "?startStep={startStep}",
+            arguments = listOf(
+                navArgument("startStep") {
+                    type = NavType.IntType
+                    defaultValue = 0
+                }
+            )
+        ) { backStackEntry ->
+            val startStep = backStackEntry.arguments?.getInt("startStep") ?: 0
+            HelpScreen(
+                startStep = startStep,
+                onBack = { navController.popBackStack() }
+            )
         }
         composable(Screen.ManageConfigs.name) {
             ManageConfigsScreen(
@@ -73,7 +85,16 @@ fun RitsuNavGraph(
             )
         }
         composable(Screen.Debug.name) { DebugScreen() }
-        composable(Screen.BoxEditor.name) { BoxEditorScreen() }
+        composable(Screen.BoxEditor.name) {
+            BoxEditorScreen(
+                onHelpClick = {
+                    navController.navigate(Screen.BoxEditorHelp.name)
+                }
+            )
+        }
+        composable(Screen.BoxEditorHelp.name) {
+            BoxEditorHelpScreen(onBack = { navController.popBackStack() })
+        }
         composable(Screen.Theme.name) { ThemeScreen(themeRepository) }
         composable(
             route = Screen.ChartDetails.name + "/{configId}/{songTitle}/{difficultyName}/{difficultyVal}",

@@ -41,6 +41,7 @@ fun HeaderComponent(
                         Screen.TopScores -> "Top Scores"
                         Screen.GraphDetail -> "Graph Detail"
                         Screen.Help -> "Help"
+                        Screen.BoxEditorHelp -> "Box Editor Guide"
                     }
                 )
                 subtitle?.let {

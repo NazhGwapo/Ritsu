@@ -110,7 +110,7 @@ fun MainContent(themeRepository: ThemeRepository) {
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
-            if (currentScreen != Screen.Help) {
+            if (currentScreen != Screen.Help && currentScreen != Screen.BoxEditorHelp) {
                 HeaderComponent(
                     currentScreen = currentScreen,
                     subtitle = subtitle,
@@ -127,7 +127,7 @@ fun MainContent(themeRepository: ThemeRepository) {
             }
         },
         bottomBar = {
-            if ((currentScreen == Screen.Score || currentScreen == Screen.Data) && currentScreen != Screen.Help) {
+            if ((currentScreen == Screen.Score || currentScreen == Screen.Data) && currentScreen != Screen.Help && currentScreen != Screen.BoxEditorHelp) {
                 NavigationComponent(
                     currentScreen = currentScreen,
                     onScreenSelected = { screen ->

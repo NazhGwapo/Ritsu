@@ -124,46 +124,61 @@ fun ConfigDetailDialog(
                 } else {
                     // System Settings
                     Text("System Settings", style = MaterialTheme.typography.titleSmall)
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                val newData = configData.copy(useRankOcr = !configData.useRankOcr)
-                                onUpdateConfig(config.copy(configData = json.encodeToString(newData)))
-                            }
-                            .padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Checkbox(
-                            checked = configData.useRankOcr,
-                            onCheckedChange = {
-                                val newData = configData.copy(useRankOcr = it)
-                                onUpdateConfig(config.copy(configData = json.encodeToString(newData)))
-                            }
+                    
+                    Column(modifier = Modifier.padding(vertical = 4.dp)) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    val newData = configData.copy(useRankOcr = !configData.useRankOcr)
+                                    onUpdateConfig(config.copy(configData = json.encodeToString(newData)))
+                                },
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Checkbox(
+                                checked = configData.useRankOcr,
+                                onCheckedChange = {
+                                    val newData = configData.copy(useRankOcr = it)
+                                    onUpdateConfig(config.copy(configData = json.encodeToString(newData)))
+                                }
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Use Rank OCR", style = MaterialTheme.typography.bodyMedium)
+                        }
+                        Text(
+                            "Standard OCR may fail on highly stylized rank icons (e.g., SSS+ with sparkles).",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(start = 48.dp)
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Use Rank OCR", style = MaterialTheme.typography.bodyMedium)
                     }
 
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                val newData = configData.copy(useAccuracyOcr = !configData.useAccuracyOcr)
-                                onUpdateConfig(config.copy(configData = json.encodeToString(newData)))
-                            }
-                            .padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Checkbox(
-                            checked = configData.useAccuracyOcr,
-                            onCheckedChange = {
-                                val newData = configData.copy(useAccuracyOcr = it)
-                                onUpdateConfig(config.copy(configData = json.encodeToString(newData)))
-                            }
+                    Column(modifier = Modifier.padding(vertical = 4.dp)) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    val newData = configData.copy(useAccuracyOcr = !configData.useAccuracyOcr)
+                                    onUpdateConfig(config.copy(configData = json.encodeToString(newData)))
+                                },
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Checkbox(
+                                checked = configData.useAccuracyOcr,
+                                onCheckedChange = {
+                                    val newData = configData.copy(useAccuracyOcr = it)
+                                    onUpdateConfig(config.copy(configData = json.encodeToString(newData)))
+                                }
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Use Accuracy OCR", style = MaterialTheme.typography.bodyMedium)
+                        }
+                        Text(
+                            "Disable this if the game doesn't show accuracy percentage. Ritsu will calculate it from judge counts instead.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(start = 48.dp)
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Use Accuracy OCR", style = MaterialTheme.typography.bodyMedium)
                     }
 
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))

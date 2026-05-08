@@ -14,11 +14,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.CameraAlt
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -34,8 +30,11 @@ import com.example.ritsu.ui.cards.ScoreCard
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HelpScreen(onBack: () -> Unit) {
-    var currentStep by remember { mutableIntStateOf(0) }
+fun HelpScreen(
+    startStep: Int = 0,
+    onBack: () -> Unit
+) {
+    var currentStep by remember { mutableIntStateOf(startStep) }
     val totalSteps = 5
 
     Scaffold(
@@ -126,7 +125,7 @@ fun TutorialStepWelcome() {
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                Icons.Default.Settings,
+                Icons.Default.AutoGraph,
                 contentDescription = null,
                 modifier = Modifier.size(64.dp),
                 tint = MaterialTheme.colorScheme.onPrimaryContainer
@@ -141,7 +140,7 @@ fun TutorialStepWelcome() {
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            "Ritsu is an OCR-powered rhythm game score tracker. Automatically extract and save your play records from screenshots.",
+            "Ritsu is an OCR-powered rhythm game score tracker. Automatically extract and save your play records from screenshots with ease.",
             style = MaterialTheme.typography.bodyLarge,
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -153,11 +152,11 @@ fun TutorialStepWelcome() {
 fun TutorialStepManageConfig() {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
-            "1. Define Your Game",
+            "Define Your Games",
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold
         )
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(12.dp))
         Text(
             "Start by creating a 'Configuration' for your game. This tells Ritsu which areas of the screen contain the song title, score, and rank.",
             style = MaterialTheme.typography.bodyMedium,
@@ -165,11 +164,10 @@ fun TutorialStepManageConfig() {
         )
         Spacer(modifier = Modifier.height(24.dp))
         
-        // Improved Mockup of ManageConfigsScreen
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(12.dp)),
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
             shape = RoundedCornerShape(12.dp),
             tonalElevation = 1.dp
         ) {
@@ -179,7 +177,7 @@ fun TutorialStepManageConfig() {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Box(modifier = Modifier.size(40.dp).background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(4.dp)), contentAlignment = Alignment.Center) {
-                        Icon(Icons.Default.Image, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        Icon(Icons.Default.MusicNote, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                     }
                     Spacer(modifier = Modifier.width(16.dp))
                     Column {
@@ -193,7 +191,7 @@ fun TutorialStepManageConfig() {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Box(modifier = Modifier.size(40.dp).background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(4.dp)), contentAlignment = Alignment.Center) {
-                        Icon(Icons.Default.Image, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
+                        Icon(Icons.Default.LibraryMusic, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
                     }
                     Spacer(modifier = Modifier.width(16.dp))
                     Column {
@@ -204,7 +202,7 @@ fun TutorialStepManageConfig() {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f))
+                        .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
                         .padding(12.dp),
                     contentAlignment = Alignment.Center
                 ) {
@@ -223,44 +221,43 @@ fun TutorialStepManageConfig() {
 fun TutorialStepBoxEditor() {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
-            "2. Map the Screen",
+            "Map the Screenshot",
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold
         )
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(12.dp))
         Text(
-            "Upload a reference screenshot and draw 'Boxes' over the data you want to track. Ritsu will scan these areas in all future uploads.",
+            "Upload a reference screenshot and draw 'Boxes' over the data you want to track. Ritsu will scan these specific areas in all your uploads.",
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Mockup of BoxEditor with a "Game" screen
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(280.dp)
+                .height(260.dp)
                 .clip(RoundedCornerShape(12.dp))
                 .background(Color(0xFF1A1A1A))
-                .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(12.dp)),
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
         ) {
-            // Fake Game UI
+            // Fake Game UI Mockup
             Column(modifier = Modifier.padding(16.dp)) {
-                Box(modifier = Modifier.fillMaxWidth().height(40.dp).background(Color.DarkGray.copy(alpha = 0.5f), RoundedCornerShape(4.dp)), contentAlignment = Alignment.Center) {
-                    Text("SONG TITLE AREA", color = Color.Gray, fontSize = 10.sp)
+                Box(modifier = Modifier.fillMaxWidth().height(36.dp).background(Color.DarkGray.copy(alpha = 0.4f), RoundedCornerShape(4.dp)), contentAlignment = Alignment.Center) {
+                    Text("SONG TITLE AREA", color = Color.Gray, fontSize = 9.sp, fontWeight = FontWeight.Bold)
                 }
                 Spacer(modifier = Modifier.height(60.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Box(modifier = Modifier.size(80.dp).background(Color.DarkGray.copy(alpha = 0.5f), RoundedCornerShape(4.dp)), contentAlignment = Alignment.Center) {
-                        Text("RANK", color = Color.Gray, fontSize = 10.sp)
+                    Box(modifier = Modifier.size(72.dp).background(Color.DarkGray.copy(alpha = 0.4f), RoundedCornerShape(4.dp)), contentAlignment = Alignment.Center) {
+                        Text("RANK", color = Color.Gray, fontSize = 9.sp, fontWeight = FontWeight.Bold)
                     }
                     Column(horizontalAlignment = Alignment.End) {
-                        Box(modifier = Modifier.width(120.dp).height(30.dp).background(Color.DarkGray.copy(alpha = 0.5f), RoundedCornerShape(4.dp)), contentAlignment = Alignment.Center) {
-                            Text("SCORE", color = Color.Gray, fontSize = 10.sp)
+                        Box(modifier = Modifier.width(110.dp).height(28.dp).background(Color.DarkGray.copy(alpha = 0.4f), RoundedCornerShape(4.dp)), contentAlignment = Alignment.Center) {
+                            Text("SCORE", color = Color.Gray, fontSize = 9.sp, fontWeight = FontWeight.Bold)
                         }
                         Spacer(modifier = Modifier.height(8.dp))
-                        Box(modifier = Modifier.width(80.dp).height(20.dp).background(Color.DarkGray.copy(alpha = 0.5f), RoundedCornerShape(4.dp)), contentAlignment = Alignment.Center) {
-                            Text("ACCURACY", color = Color.Gray, fontSize = 10.sp)
+                        Box(modifier = Modifier.width(80.dp).height(20.dp).background(Color.DarkGray.copy(alpha = 0.4f), RoundedCornerShape(4.dp)), contentAlignment = Alignment.Center) {
+                            Text("ACCURACY", color = Color.Gray, fontSize = 9.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -271,23 +268,23 @@ fun TutorialStepBoxEditor() {
                 modifier = Modifier
                     .padding(14.dp)
                     .fillMaxWidth()
-                    .height(44.dp)
+                    .height(40.dp)
                     .border(2.dp, Color.Cyan, RoundedCornerShape(2.dp))
                     .background(Color.Cyan.copy(alpha = 0.1f))
             ) {
-                Text("Song Title", color = Color.Cyan, fontSize = 8.sp, modifier = Modifier.padding(2.dp))
+                Text("Song Title", color = Color.Cyan, fontSize = 8.sp, modifier = Modifier.padding(2.dp), fontWeight = FontWeight.Bold)
             }
             
             Box(
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
                     .padding(top = 105.dp, end = 14.dp)
-                    .width(124.dp)
-                    .height(34.dp)
+                    .width(114.dp)
+                    .height(32.dp)
                     .border(2.dp, Color.Yellow, RoundedCornerShape(2.dp))
                     .background(Color.Yellow.copy(alpha = 0.1f))
             ) {
-                Text("Total Score", color = Color.Yellow, fontSize = 8.sp, modifier = Modifier.padding(2.dp))
+                Text("Total Score", color = Color.Yellow, fontSize = 8.sp, modifier = Modifier.padding(2.dp), fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -297,24 +294,23 @@ fun TutorialStepBoxEditor() {
 fun TutorialStepImporting() {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
-            "3. Fast Import",
+            "Fast Multi-Import",
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold
         )
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(12.dp))
         Text(
-            "To track your progress, just tap the Camera icon. Select your game config and pick one or more screenshots from your gallery.",
+            "Tap the central Camera icon to start importing. You can select multiple screenshots at once to process your entire session in seconds.",
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Mockup of NavigationBar highlighting the FAB
         Surface(
             modifier = Modifier.fillMaxWidth(),
             tonalElevation = 4.dp,
             shape = RoundedCornerShape(24.dp),
-            border = borderStroke()
+            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
         ) {
             Row(
                 modifier = Modifier
@@ -323,11 +319,10 @@ fun TutorialStepImporting() {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                Icon(Icons.Default.Image, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
+                Icon(Icons.Default.History, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
                 
-                // Pulsing-like effect for the FAB
                 Box(contentAlignment = Alignment.Center) {
-                    Box(modifier = Modifier.size(72.dp).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), CircleShape))
+                    Box(modifier = Modifier.size(68.dp).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f), CircleShape))
                     Box(
                         modifier = Modifier
                             .size(56.dp)
@@ -339,7 +334,7 @@ fun TutorialStepImporting() {
                     }
                 }
 
-                Icon(Icons.Default.Settings, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
+                Icon(Icons.Default.Assessment, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
             }
         }
     }
@@ -349,19 +344,18 @@ fun TutorialStepImporting() {
 fun TutorialStepScores() {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
-            "4. Analyze Your Growth",
+            "Detailed Analysis",
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold
         )
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(12.dp))
         Text(
-            "View your score history, filter by game, and see charts of your accuracy over time. Ritsu helps you see where you're improving!",
+            "View and filter your history. Ritsu automatically calculates statistics and charts to help you track your improvement over time.",
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Actual ScoreCard with dummy values
         ScoreCard(
             score = GenericScore(
                 id = 0,
@@ -387,9 +381,3 @@ fun TutorialStepScores() {
         )
     }
 }
-
-@Composable
-private fun borderStroke() = androidx.compose.foundation.BorderStroke(
-    width = 1.dp,
-    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-)

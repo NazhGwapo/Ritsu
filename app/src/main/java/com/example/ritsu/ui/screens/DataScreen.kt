@@ -20,6 +20,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ritsu.R
+import kotlinx.coroutines.launch
 import com.example.ritsu.ui.navigation.Screen
 import com.example.ritsu.data.AccuracyCalculator
 import com.example.ritsu.data.FullScoreRecord
@@ -28,6 +29,7 @@ import com.example.ritsu.data.RitsuDatabase
 import com.example.ritsu.data.RankingUtils
 import com.example.ritsu.ui.cards.*
 import com.example.ritsu.ui.components.ScoreDetailsDialog
+import com.example.ritsu.ui.components.ScoreEditDialog
 import kotlinx.serialization.json.Json
 import java.text.SimpleDateFormat
 import java.util.*
@@ -42,6 +44,7 @@ fun DataScreen(
 ) {
     val context = LocalContext.current
     val database = remember { RitsuDatabase.getDatabase(context) }
+    val scope = rememberCoroutineScope()
     val scoresFlow = remember { database.scoreDao().getAllScores() }
     val scores by scoresFlow.collectAsState(initial = null)
     val configs by database.scoreDao().getAllConfigs().collectAsState(initial = emptyList())
@@ -618,10 +621,27 @@ fun DataScreen(
     }
 
     if (scoreToEdit != null) {
-        com.example.ritsu.ui.screens.debug.ManualEntryDialog(
-            initialRecord = scoreToEdit,
-            onDismiss = { scoreToEdit = null }
-        )
+        val config = configs.find { it.id == scoreToEdit!!.genericScore.configId }
+        if (config != null) {
+            ScoreEditDialog(
+                scoreRecord = scoreToEdit!!,
+                gameConfig = config,
+                onDismiss = { scoreToEdit = null },
+                onSave = { updatedScore, updatedDetails ->
+                    scope.launch {
+                        database.scoreDao().updateScore(updatedScore)
+                        database.scoreDao().deleteDetailsForScore(updatedScore.id)
+                        database.scoreDao().insertDetails(updatedDetails)
+                        scoreToEdit = null
+                    }
+                }
+            )
+        } else {
+            com.example.ritsu.ui.screens.debug.ManualEntryDialog(
+                initialRecord = scoreToEdit,
+                onDismiss = { scoreToEdit = null }
+            )
+        }
     }
 
     if (showExportDialog) {

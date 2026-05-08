@@ -2,6 +2,7 @@ package com.example.ritsu.ui.screens.editor
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Save
@@ -18,7 +19,8 @@ fun EditorTopSection(
     selectedConfig: GameConfig?,
     onConfigSelected: (GameConfig) -> Unit,
     onImportImage: () -> Unit,
-    onSave: () -> Unit
+    onSave: () -> Unit,
+    onHelp: () -> Unit = {}
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -63,6 +65,10 @@ fun EditorTopSection(
 
             IconButton(onClick = onSave, enabled = selectedConfig != null) {
                 Icon(Icons.Default.Save, contentDescription = "Save Config")
+            }
+
+            IconButton(onClick = onHelp) {
+                Icon(Icons.AutoMirrored.Filled.Help, contentDescription = "Help")
             }
         }
     }
