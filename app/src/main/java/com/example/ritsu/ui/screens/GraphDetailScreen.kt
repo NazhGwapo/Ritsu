@@ -143,6 +143,11 @@ fun GraphDetailScreen(
         }.sortedBy { it.genericScore.playTimestamp }
     }
 
+    // Reset selected index when data changes to avoid ArrayIndexOutOfBoundsException
+    LaunchedEffect(filteredScores) {
+        selectedPointIndex = null
+    }
+
     // --- COLORS & CALCS ---
     val accColor = MaterialTheme.colorScheme.secondary
     val scoreColor = MaterialTheme.colorScheme.primary
@@ -261,7 +266,7 @@ fun GraphDetailScreen(
                         val scaleChange = zoomScale / oldScale
                         panOffset = (panOffset - centroid) * scaleChange + centroid + pan
                     }
-                }.pointerInput(Unit) {
+                }.pointerInput(graphSeries, panOffset, zoomScale, constraintsW, constraintsH) {
                     detectTapGestures { offset ->
                         var bestI = -1; var minDist = Float.MAX_VALUE
                         for (i in 0 until dataSize) {
@@ -367,12 +372,14 @@ fun GraphDetailScreen(
                         drawPath(path = path, color = series.color, style = Stroke(width = 2.dp.toPx()))
                     }
                     selectedPointIndex?.let { idx ->
-                        val dx = dataToScreenX(idx.toFloat())
-                        drawLine(color = onSurface.copy(alpha = 0.2f), start = Offset(dx, 0f), end = Offset(dx, size.height), strokeWidth = 1.dp.toPx())
-                        graphSeries.forEach { s ->
-                            val dy = dataToScreenY(s.data[idx])
-                            drawCircle(color = Color.White, radius = 6.dp.toPx(), center = Offset(dx, dy))
-                            drawCircle(color = s.color, radius = 3.dp.toPx(), center = Offset(dx, dy))
+                        if (idx in 0 until dataSize && graphSeries.all { idx < it.data.size }) {
+                            val dx = dataToScreenX(idx.toFloat())
+                            drawLine(color = onSurface.copy(alpha = 0.2f), start = Offset(dx, 0f), end = Offset(dx, size.height), strokeWidth = 1.dp.toPx())
+                            graphSeries.forEach { s ->
+                                val dy = dataToScreenY(s.data[idx])
+                                drawCircle(color = Color.White, radius = 6.dp.toPx(), center = Offset(dx, dy))
+                                drawCircle(color = s.color, radius = 3.dp.toPx(), center = Offset(dx, dy))
+                            }
                         }
                     }
                 }
@@ -394,22 +401,24 @@ fun GraphDetailScreen(
 
         // Detail Widget
         selectedPointIndex?.let { idx ->
-            val r = filteredScores[idx]
-            Surface(modifier = Modifier.fillMaxWidth().padding(16.dp), color = MaterialTheme.colorScheme.surfaceVariant, shape = RoundedCornerShape(12.dp)) {
-                Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(r.genericScore.songTitle, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        Text("${r.genericScore.difficultyName} ${r.genericScore.difficultyVal} • ${SimpleDateFormat("MMM d, yyyy HH:mm", Locale.getDefault()).format(Date(r.genericScore.playTimestamp))}", style = MaterialTheme.typography.bodySmall)
-                        val txt = when (graphType) {
-                            "Judgement", "Metric" -> graphSeries.joinToString(", ") { s -> "${s.label}: ${s.data[idx].toInt()}" }
-                            "Accuracy" -> "Accuracy: ${"%.2f".format(r.genericScore.accuracy)}%"
-                            "Score" -> "Score: %,d".format(r.genericScore.totalScore)
-                            "Combo" -> if (normalized) "Combo: %.1f%%".format(graphSeries.first().data[idx]) else "Max Combo: ${r.genericScore.maxCombo}x"
-                            else -> ""
+            if (idx < filteredScores.size && graphSeries.all { idx < it.data.size }) {
+                val r = filteredScores[idx]
+                Surface(modifier = Modifier.fillMaxWidth().padding(16.dp), color = MaterialTheme.colorScheme.surfaceVariant, shape = RoundedCornerShape(12.dp)) {
+                    Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(r.genericScore.songTitle, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text("${r.genericScore.difficultyName} ${r.genericScore.difficultyVal} • ${SimpleDateFormat("MMM d, yyyy HH:mm", Locale.getDefault()).format(Date(r.genericScore.playTimestamp))}", style = MaterialTheme.typography.bodySmall)
+                            val txt = when (graphType) {
+                                "Judgement", "Metric" -> graphSeries.joinToString(", ") { s -> "${s.label}: ${s.label}: ${s.data[idx].toInt()}" }
+                                "Accuracy" -> "Accuracy: ${"%.2f".format(r.genericScore.accuracy)}%"
+                                "Score" -> "Score: %,d".format(r.genericScore.totalScore)
+                                "Combo" -> if (normalized) "Combo: %.1f%%".format(graphSeries.first().data[idx]) else "Max Combo: ${r.genericScore.maxCombo}x"
+                                else -> ""
+                            }
+                            Text(txt, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = scoreColor, maxLines = 2, overflow = TextOverflow.Ellipsis)
                         }
-                        Text(txt, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = scoreColor, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        Button(onClick = { showScoreDetails = r }, shape = RoundedCornerShape(8.dp)) { Text("Details", fontSize = 12.sp) }
                     }
-                    Button(onClick = { showScoreDetails = r }, shape = RoundedCornerShape(8.dp)) { Text("Details", fontSize = 12.sp) }
                 }
             }
         }
