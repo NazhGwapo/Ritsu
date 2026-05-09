@@ -409,7 +409,10 @@ fun GraphDetailScreen(
                             Text(r.genericScore.songTitle, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             Text("${r.genericScore.difficultyName} ${r.genericScore.difficultyVal} • ${SimpleDateFormat("MMM d, yyyy HH:mm", Locale.getDefault()).format(Date(r.genericScore.playTimestamp))}", style = MaterialTheme.typography.bodySmall)
                             val txt = when (graphType) {
-                                "Judgement", "Metric" -> graphSeries.joinToString(", ") { s -> "${s.label}: ${s.label}: ${s.data[idx].toInt()}" }
+                                "Judgement", "Metric" -> graphSeries.joinToString(", ") { s ->
+                                    val valStr = if (normalized && graphType == "Judgement") "%.1f%%".format(s.data[idx]) else s.data[idx].toInt().toString()
+                                    "${s.label}: $valStr"
+                                }
                                 "Accuracy" -> "Accuracy: ${"%.2f".format(r.genericScore.accuracy)}%"
                                 "Score" -> "Score: %,d".format(r.genericScore.totalScore)
                                 "Combo" -> if (normalized) "Combo: %.1f%%".format(graphSeries.first().data[idx]) else "Max Combo: ${r.genericScore.maxCombo}x"
