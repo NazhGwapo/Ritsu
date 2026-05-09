@@ -46,22 +46,12 @@ fun RitsuNavGraph(
                 onDismissExport = onDismissDataExport
             )
         }
-        composable(
-            route = Screen.Options.name + "?startHelp={startHelp}",
-            arguments = listOf(
-                navArgument("startHelp") { 
-                    type = NavType.BoolType
-                    defaultValue = false
-                }
-            )
-        ) { backStackEntry ->
-            val startHelp = backStackEntry.arguments?.getBoolean("startHelp") ?: false
+        composable(Screen.Options.name) {
             OptionsScreen(
                 onManageConfigsClick = { navController.navigate(Screen.ManageConfigs.name) },
                 onDebugClick = { navController.navigate(Screen.Debug.name) },
                 onThemeClick = { navController.navigate(Screen.Theme.name) },
-                onHelpClick = { navController.navigate(Screen.Help.name) },
-                startHelp = startHelp
+                onHelpClick = { navController.navigate(Screen.Help.name) }
             )
         }
         composable(

@@ -167,7 +167,7 @@ fun ScoreScreen(
                     } else {
                         Spacer(modifier = Modifier.height(8.dp))
                         Button(
-                            onClick = { navController.navigate(Screen.Options.name + "?startHelp=true") },
+                            onClick = { navController.navigate(Screen.Help.name) },
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.secondaryContainer,
                                 contentColor = MaterialTheme.colorScheme.onSecondaryContainer

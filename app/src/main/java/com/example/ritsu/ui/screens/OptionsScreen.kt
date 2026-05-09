@@ -30,8 +30,7 @@ fun OptionsScreen(
     onManageConfigsClick: () -> Unit,
     onDebugClick: () -> Unit,
     onThemeClick: () -> Unit,
-    onHelpClick: () -> Unit,
-    startHelp: Boolean = false
+    onHelpClick: () -> Unit
 ) {
     val context = LocalContext.current
     val database = remember { RitsuDatabase.getDatabase(context) }
@@ -43,12 +42,6 @@ fun OptionsScreen(
     var showDeleteDataDialog by remember { mutableStateOf(false) }
     var selectedConfigToExport by remember { mutableStateOf<GameConfig?>(null) }
     val scope = rememberCoroutineScope()
-
-    LaunchedEffect(startHelp) {
-        if (startHelp) {
-            onHelpClick()
-        }
-    }
 
     // --- Configuration Import/Export Launchers ---
     val configImportLauncher = rememberLauncherForActivityResult(
@@ -198,7 +191,26 @@ fun OptionsScreen(
     }
 
     if (showDataExportDialog) {
-        // ... (existing code for showDataExportDialog)
+        AlertDialog(
+            onDismissRequest = { showDataExportDialog = false },
+            title = { Text("Export Play Data") },
+            text = { Text("Choose a format to export your scores and field details.") },
+            confirmButton = {
+                Row {
+                    TextButton(onClick = {
+                        dataJsonExportLauncher.launch("ritsu_data_${System.currentTimeMillis()}.json")
+                        showDataExportDialog = false
+                    }) { Text("JSON") }
+                    TextButton(onClick = {
+                        dataCsvExportLauncher.launch("ritsu_data_${System.currentTimeMillis()}.csv")
+                        showDataExportDialog = false
+                    }) { Text("CSV") }
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDataExportDialog = false }) { Text("Cancel") }
+            }
+        )
     }
 
     if (showDeleteDataDialog) {
