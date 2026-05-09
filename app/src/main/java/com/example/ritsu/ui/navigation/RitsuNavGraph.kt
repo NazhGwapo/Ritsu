@@ -46,11 +46,37 @@ fun RitsuNavGraph(
                 onDismissExport = onDismissDataExport
             )
         }
-        composable(Screen.Options.name) {
+        composable(
+            route = Screen.Options.name + "?startHelp={startHelp}",
+            arguments = listOf(
+                navArgument("startHelp") { 
+                    type = NavType.BoolType
+                    defaultValue = false
+                }
+            )
+        ) { backStackEntry ->
+            val startHelp = backStackEntry.arguments?.getBoolean("startHelp") ?: false
             OptionsScreen(
                 onManageConfigsClick = { navController.navigate(Screen.ManageConfigs.name) },
                 onDebugClick = { navController.navigate(Screen.Debug.name) },
-                onThemeClick = { navController.navigate(Screen.Theme.name) }
+                onThemeClick = { navController.navigate(Screen.Theme.name) },
+                onHelpClick = { navController.navigate(Screen.Help.name) },
+                startHelp = startHelp
+            )
+        }
+        composable(
+            route = Screen.Help.name + "?startStep={startStep}",
+            arguments = listOf(
+                navArgument("startStep") {
+                    type = NavType.IntType
+                    defaultValue = 0
+                }
+            )
+        ) { backStackEntry ->
+            val startStep = backStackEntry.arguments?.getInt("startStep") ?: 0
+            HelpScreen(
+                startStep = startStep,
+                onBack = { navController.popBackStack() }
             )
         }
         composable(Screen.ManageConfigs.name) {
@@ -59,7 +85,16 @@ fun RitsuNavGraph(
             )
         }
         composable(Screen.Debug.name) { DebugScreen() }
-        composable(Screen.BoxEditor.name) { BoxEditorScreen() }
+        composable(Screen.BoxEditor.name) {
+            BoxEditorScreen(
+                onHelpClick = {
+                    navController.navigate(Screen.BoxEditorHelp.name)
+                }
+            )
+        }
+        composable(Screen.BoxEditorHelp.name) {
+            BoxEditorHelpScreen(onBack = { navController.popBackStack() })
+        }
         composable(Screen.Theme.name) { ThemeScreen(themeRepository) }
         composable(
             route = Screen.ChartDetails.name + "/{configId}/{songTitle}/{difficultyName}/{difficultyVal}",

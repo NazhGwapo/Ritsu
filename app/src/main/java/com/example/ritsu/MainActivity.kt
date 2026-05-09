@@ -38,10 +38,13 @@ class MainActivity : ComponentActivity() {
         setContent {
             val context = LocalContext.current
             val themeRepository = remember { ThemeRepository(context) }
-            val themeConfig by themeRepository.themeConfig.collectAsState(initial = ThemeConfig())
+            val themeConfigState = themeRepository.themeConfig.collectAsState(initial = null)
 
-            RitsuTheme(themeConfig = themeConfig) {
-                RitsuApp(themeRepository)
+            val themeConfig = themeConfigState.value
+            if (themeConfig != null) {
+                RitsuTheme(themeConfig = themeConfig) {
+                    RitsuApp(themeRepository)
+                }
             }
         }
     }
@@ -87,6 +90,7 @@ fun MainContent(themeRepository: ThemeRepository) {
         navBackStackEntry?.destination?.route?.startsWith(Screen.TopCharts.name) == true -> Screen.TopCharts
         navBackStackEntry?.destination?.route?.startsWith(Screen.TopScores.name) == true -> Screen.TopScores
         navBackStackEntry?.destination?.route?.startsWith(Screen.GraphDetail.name) == true -> Screen.GraphDetail
+        navBackStackEntry?.destination?.route?.startsWith(Screen.Help.name) == true -> Screen.Help
         else -> Screen.Score
     }
 
@@ -106,22 +110,24 @@ fun MainContent(themeRepository: ThemeRepository) {
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
-            HeaderComponent(
-                currentScreen = currentScreen,
-                subtitle = subtitle,
-                onActionClick = {
-                    when (currentScreen) {
-                        Screen.Score, Screen.Data -> navController.navigate(Screen.Options.name)
-                        else -> navController.popBackStack()
+            if (currentScreen != Screen.Help && currentScreen != Screen.BoxEditorHelp) {
+                HeaderComponent(
+                    currentScreen = currentScreen,
+                    subtitle = subtitle,
+                    onActionClick = {
+                        when (currentScreen) {
+                            Screen.Score, Screen.Data -> navController.navigate(Screen.Options.name)
+                            else -> navController.popBackStack()
+                        }
+                    },
+                    onShareClick = {
+                        showDataExportDialog = true
                     }
-                },
-                onShareClick = {
-                    showDataExportDialog = true
-                }
-            )
+                )
+            }
         },
         bottomBar = {
-            if (currentScreen == Screen.Score || currentScreen == Screen.Data) {
+            if ((currentScreen == Screen.Score || currentScreen == Screen.Data) && currentScreen != Screen.Help && currentScreen != Screen.BoxEditorHelp) {
                 NavigationComponent(
                     currentScreen = currentScreen,
                     onScreenSelected = { screen ->

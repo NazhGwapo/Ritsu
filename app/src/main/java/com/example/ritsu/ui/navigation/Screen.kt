@@ -13,5 +13,7 @@ enum class Screen {
     TopGames,
     TopCharts,
     TopScores,
-    GraphDetail
+    GraphDetail,
+    Help,
+    BoxEditorHelp
 }

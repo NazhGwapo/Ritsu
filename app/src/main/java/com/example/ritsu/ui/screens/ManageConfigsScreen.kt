@@ -47,6 +47,7 @@ fun ManageConfigsScreen(onEditConfig: () -> Unit) {
     }
     var showAppPicker by remember { mutableStateOf(value = false) }
     var showNewConfigDialog by remember { mutableStateOf(value = false) }
+    var showReminder by remember { mutableStateOf(value = false) }
 
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
@@ -187,15 +188,33 @@ fun ManageConfigsScreen(onEditConfig: () -> Unit) {
     if (showNewConfigDialog) {
         NewConfigDialog(
             onDismiss = { showNewConfigDialog = false },
-            onConfirm = { name ->
+            onConfirm = { name, acc, rank ->
                 scope.launch {
-                    val newConfigData = GameConfigData(gameName = name)
+                    val newConfigData = GameConfigData(
+                        gameName = name,
+                        useAccuracyOcr = acc,
+                        useRankOcr = rank
+                    )
                     val config = GameConfig(
                         gameName = name,
                         configData = json.encodeToString(newConfigData)
                     )
                     database.scoreDao().insertConfig(config)
                     showNewConfigDialog = false
+                    showReminder = true
+                }
+            }
+        )
+    }
+
+    if (showReminder) {
+        AlertDialog(
+            onDismissRequest = { showReminder = false },
+            title = { Text("Config Created") },
+            text = { Text("Your new configuration has been created. To actually map the fields and bounding boxes, press the Edit button in the lower right corner.") },
+            confirmButton = {
+                TextButton(onClick = { showReminder = false }) {
+                    Text("OK")
                 }
             }
         )
