@@ -342,6 +342,23 @@ fun TutorialStepImporting() {
 
 @Composable
 fun TutorialStepScores() {
+    val mockScore = remember {
+        GenericScore(
+            id = 0,
+            configId = 0,
+            songTitle = "KIZUNA MUSIC",
+            difficultyName = "EXPERT",
+            difficultyVal = "26",
+            difficultySortValue = 26.0,
+            totalScore = 985000,
+            maxCombo = 780,
+            accuracy = 99.54,
+            playRank = "S",
+            playTimestamp = System.currentTimeMillis(),
+            importTimestamp = System.currentTimeMillis()
+        )
+    }
+
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             "Detailed Analysis",
@@ -357,20 +374,7 @@ fun TutorialStepScores() {
         Spacer(modifier = Modifier.height(24.dp))
 
         ScoreCard(
-            score = GenericScore(
-                id = 0,
-                configId = 0,
-                songTitle = "KIZUNA MUSIC",
-                difficultyName = "EXPERT",
-                difficultyVal = "26",
-                difficultySortValue = 26.0,
-                totalScore = 985000,
-                maxCombo = 780,
-                accuracy = 99.54,
-                playRank = "S",
-                playTimestamp = System.currentTimeMillis(),
-                importTimestamp = System.currentTimeMillis()
-            ),
+            score = mockScore,
             gameName = "BanG Dream!",
             displayIconUri = null,
             useRank = true,
